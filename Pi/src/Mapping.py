@@ -1,5 +1,41 @@
 from Constants import *
 
+class Position:
+    """Position in 2 dimensional space"""
+    def __init__(self, x, y):
+        """Initializes Position
+
+        Args:
+            x (int): x coordinate
+            y (int): y coordinate
+        """
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other):
+        """Compares two positions
+
+        Args:
+            other (Position): other position
+
+        Returns:
+            bool: True if x and y values are the same, otherwise False
+        """
+        return self.x == other.x and self.y == other.y
+
+def distance(a, b):
+    """Calculates manhattan distance between two positons
+
+    Args:
+        a (Position): first positon
+        b (Position): second position
+
+    Returns:
+        int: manhattan distance between first and second position
+    """
+    return abs(a.x - b.x) + abs(a.y - b.y)
+
+
 MAZE_TILE_TEMPLATE =  {
     NORTH: False,
     SOUTH: False,
@@ -9,7 +45,6 @@ MAZE_TILE_TEMPLATE =  {
     RAMP: False,
     BLACK: False
 }
-
 
 class MazeTile:
     """Represents tile in maze. Supports custom attributes"""
