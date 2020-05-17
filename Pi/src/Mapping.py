@@ -5,9 +5,9 @@ MAZE_TILE_TEMPLATE =  {
     SOUTH: False,
     WEST: False,
     EAST: False,
-    "VICTIM": False,
-    "RAMP": False,
-    "BLACK": False
+    VICTIM: False,
+    RAMP: False,
+    BLACK: False
 }
 
 
