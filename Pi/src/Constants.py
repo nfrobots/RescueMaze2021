@@ -6,6 +6,12 @@ class Direction(Enum):
     SOUTH = 2
     EAST = 3
 
+class RelDirection(Enum):
+    FORWARD = 0
+    RIGHT = 1
+    BACKWARD = 2
+    LEFT = 3
+
 VICTIM = "VICTIM"
 RAMP = "RAMP"
 BLACK = "BLACK"
