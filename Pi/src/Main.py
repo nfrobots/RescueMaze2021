@@ -1,4 +1,4 @@
+import Mapping
+from Constants import *
 
-print("leel ich muss los")
-print("Hello, world from Raspi")
-
+m = Mapping.Map()
