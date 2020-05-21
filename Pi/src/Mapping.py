@@ -1,6 +1,6 @@
 import copy
 
-from Constants import *
+import Constants
 
 
 class Position:
@@ -25,6 +25,14 @@ class Position:
             bool: True if x and y values are the same, otherwise False
         """
         return self.x == other.x and self.y == other.y
+    
+    def __repr__(self):
+        """Generates representation string for
+
+        Returns:
+            str: representation string for this position
+        """
+        return "<Position: x={}, y={}>".format(self.x, self.y)
 
 def distance(a, b):
     """Calculates manhattan distance between two positons
@@ -55,25 +63,26 @@ class _Vctr:
 
 
 MAZE_TILE_TEMPLATE =  {
-    Direction.NORTH: False,
-    Direction.SOUTH: False,
-    Direction.WEST: False,
-    Direction.EAST: False,
-    VICTIM: False,
-    RAMP: False,
-    BLACK: False
+    Constants.Direction.NORTH: False,
+    Constants.Direction.SOUTH: False,
+    Constants.Direction.WEST: False,
+    Constants.Direction.EAST: False,
+    Constants.VICTIM: False,
+    Constants.RAMP: False,
+    Constants.BLACK: False
 }
 
 class MazeTile:
     """Represents tile in maze. Supports custom attributes"""
 
-    def __init__(self, template = MAZE_TILE_TEMPLATE):
+    def __init__(self, template = MAZE_TILE_TEMPLATE, _cpy = copy.deepcopy):
         """Initializes MazeTile
 
         Args:
             template (dict, optional): dict containing attributes of MazeTile. Defaults to MAZE_TILE_TEMPLATE.
+            _cpy (function, optional): function used to copy template. Defaults to copy.deepcopy.
         """
-        self._data = copy.deepcopy(template)
+        self._data = _cpy(template)
 
     def __getitem__(self, key):
         """Gets attribute from MazeTile
@@ -115,19 +124,19 @@ class MazeTile:
         """Returns representation string
 
         Returns:
-            string: representation containing values of attributes
+            str: representation containing values of attributes
         """
-        return "MazeTile with attributes:\n\t" + "\n\t".join("{}: {}".format(key, self._data[key]) for key in self._data)
+        return "<MazeTile with attributes:\n\t" + "\n\t".join("{}: {}".format(key, self._data[key]) for key in self._data) + ">"
 
 
 class Map:
     """Map consisting of MazeTiles and a robot"""
-    def __init__(self):
-        """initializes Map with single default MazeTile and Robot facing north"""
-        self.map = [[MazeTile()]]
+    def __init__(self, tile = MazeTile()):
+        
+        self.map = [[tile]]
         self.sizeX = 1
         self.sizeY = 1
-        self.robot = _Vctr(0, 0, Direction.NORTH)
+        self.robot = _Vctr(0, 0, Constants.Direction.NORTH)
 
     def get(self, x, y):
         """Gets MazeTile at specified position
@@ -164,26 +173,32 @@ class Map:
 
         Args:
             direction (Constants.Direction): direction in which to expand the map
+
+        Raises:
+            TypeError: if direction is not of type Constants.Direction
         """
-        if direction == Direction.NORTH:
+        if not isinstance(direction, Constants.Direction):
+            raise TypeError("given argument is not of type Constants.RelDirection")
+
+        if direction == Constants.Direction.NORTH:
             newMap = [[MazeTile() for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
             newSizeX = self.sizeX
             newSizeY = self.sizeY + 1
             xOffset = 0
             yOffset = 1
-        elif direction == Direction.SOUTH:
+        elif direction == Constants.Direction.SOUTH:
             newMap = [[MazeTile() for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
             newSizeX = self.sizeX
             newSizeY = self.sizeY + 1
             xOffset = 0
             yOffset = 0
-        elif direction == Direction.WEST:
+        elif direction == Constants.Direction.WEST:
             newMap = [[MazeTile() for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
             newSizeX = self.sizeX + 1
             newSizeY = self.sizeY
             xOffset = 1
             yOffset = 0
-        elif direction == Direction.EAST:
+        elif direction == Constants.Direction.EAST:
             newMap = [[MazeTile() for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
             newSizeX = self.sizeX + 1
             newSizeY = self.sizeY
@@ -198,8 +213,55 @@ class Map:
         self.sizeX = newSizeX
         self.sizeY = newSizeY
 
+    def relDirectionToDirection(self, relDirection):
+        """Converts relative direction to absolute direction from robot perspective
+
+        Args:
+            relDirection (Constants.RelDirection): direction to convert
+
+        Returns:
+            Constants.Direction: absolute direction
+
+        Raises:
+            TypeError: if relDirection is not of type Constants.RelDirection
+        """
+        if not isinstance(relDirection, Constants.RelDirection):
+            raise TypeError("given argument is not of type Constants.RelDirection")
+
+        return Constants.Direction((self.robot.rotation.value + relDirection.value) % 4)
+
+    def rotateRobot(self, relDirection):
+        """Rotates robot by given relative rotation
+
+        Args:
+            relDirection (Constants.RelDirection): direction to rotate robot by
+        
+        Raises:
+            TypeError: if relDirection is not of type Constants.RelDirection
+        """
+        if not isinstance(relDirection, Constants.RelDirection):
+            raise TypeError("given argument is not of type Constants.RelDirection")
+
+        self.robot.rotation = self.relDirectionToDirection(relDirection)
+
+    def getRobotPosition(self):
+        """Gets robot position
+
+        Returns:
+            Position: position of robot
+        """
+        return Position(self.robot.x, self.robot.y)
+
+    def getRobotDirection(self):
+        """Gets robot direction
+
+        Returns:
+            Constants.Direction: direction of robot
+        """
+        return self.robot.rotation
+
 def printShape(mp):
     for row in mp:
-        for elem in row:
+        for _ in row:
             print("x", end = ' ')
         print()
