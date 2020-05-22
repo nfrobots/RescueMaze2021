@@ -1,4 +1,5 @@
 import copy
+import json
 
 import Constants
 
@@ -181,25 +182,31 @@ class Map:
             raise TypeError("given argument is not of type Constants.RelDirection")
 
         if direction == Constants.Direction.NORTH:
-            newMap = [[MazeTile() for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
+            newMap = [[None for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
+            newMap[0] = [MazeTile() for x in range(self.sizeX)]
             newSizeX = self.sizeX
             newSizeY = self.sizeY + 1
             xOffset = 0
             yOffset = 1
         elif direction == Constants.Direction.SOUTH:
-            newMap = [[MazeTile() for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
+            newMap = [[None for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
+            newMap[self.sizeY] = [MazeTile() for x in range(self.sizeX)]
             newSizeX = self.sizeX
             newSizeY = self.sizeY + 1
             xOffset = 0
             yOffset = 0
         elif direction == Constants.Direction.WEST:
-            newMap = [[MazeTile() for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
+            newMap = [[None for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
+            for y in range(self.sizeY):
+                newMap[y][0] = MazeTile()
             newSizeX = self.sizeX + 1
             newSizeY = self.sizeY
             xOffset = 1
             yOffset = 0
         elif direction == Constants.Direction.EAST:
-            newMap = [[MazeTile() for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
+            newMap = [[None for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
+            for y in range(self.sizeY):
+                newMap[y][self.sizeX] = MazeTile()
             newSizeX = self.sizeX + 1
             newSizeY = self.sizeY
             xOffset = 0
@@ -259,6 +266,24 @@ class Map:
             Constants.Direction: direction of robot
         """
         return self.robot.rotation
+
+    def save(self, path):
+        obj = {
+            "sizeX": self.sizeX,
+            "sizeY": self.sizeY,
+            "robotX": self.robot.x,
+            "robotY": self.robot.y,
+            "robotDirection": str(self.robot.rotation),
+            "Map": {}
+        }
+        for y in range(self.sizeY):
+            for x in range(self.sizeX):
+                obj["Map"][str(x) + "," + str(y)] = {}
+                for key in self.map[y][x]._data:
+                    obj["Map"][str(x) + "," + str(y)][str(key)] = self.map[y][x][key]
+
+        with open(path, 'w') as f:
+            json.dump(obj, f)
 
 def printShape(mp):
     for row in mp:
