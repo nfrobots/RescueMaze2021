@@ -1,3 +1,4 @@
 Pi/src/__pycache__
 Arduino/bin
 .vscode
+*.json
