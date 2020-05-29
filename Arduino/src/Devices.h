@@ -2,7 +2,7 @@
 
 #include "ASL/types.h"
 
-#define IRSM 5
+const int IRSM = 5;
 
 class IrSensor
 {
@@ -17,30 +17,5 @@ private:
     int values[IRSM];
     asl::uint8_t index = 0;
     int total = 0;
+    int value = 0; //smoothed value
 };
-
-IrSensor::IrSensor(asl::uint8_t pin) : pin(pin)
-{
-    for(int i = 0; i < IRSM; i++)
-    {
-        update();
-    }
-}
-
-void IrSensor::update()
-{
-    total -= values[index];
-    values[index] = getRawValue();
-    total += values[index];
-    index = ++index % IRSM;
-}
-
-int IrSensor::getValue()
-{
-    return total / IRSM;
-}
-
-int IrSensor::getRawValue()
-{
-    return analogRead(pin);
-}
