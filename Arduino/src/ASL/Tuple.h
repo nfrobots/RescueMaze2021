@@ -43,3 +43,9 @@ auto& get(Tuple<Ts...> tuple)
 {
 	return tuple._Tuple_elem<Index, _Get_type<Index, Ts...>::type>::get();
 }
+
+template<typename ... Ts>
+asl::size_t get_size(Tuple<Ts...>)
+{
+	return sizeof...(Ts);
+}
