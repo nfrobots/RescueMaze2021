@@ -12,10 +12,10 @@ public:
     int getValue();
     int getRawValue();
 
+    int value = 0; //smoothed value
 private:
     asl::uint8_t pin;
     int values[IRSM];
     asl::uint8_t index = 0;
     int total = 0;
-    int value = 0; //smoothed value
 };
