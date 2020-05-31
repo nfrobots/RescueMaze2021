@@ -15,11 +15,13 @@ public:
 	T& ref;
 };
 
-template<typename C, typename I>
-class TrExtractor
+
+template<typename I, typename C>
+class TrParser
 {
 public:
-	TrExtractor(C callable, I& interface) : callable(callable), interface(interface) {}
+	TrParser(I& interface, C callable, String head, String foot)
+     : callable(callable), interface(interface), head(head), foot(foot) {}
 
 	template<typename T>
 	void operator()(const TrValue<T>& trvalue)
@@ -27,25 +29,27 @@ public:
 		interface.print(callable(trvalue.name, trvalue.ref));
 	}
 
-private:
 	C callable;
     I& interface;
+    String head, foot;
 };
 
 template<typename P, typename I, typename ... Ts>
 class JsonTransmitter
 {
 public:
-	JsonTransmitter(P parser, I& interf, const Ts& ... args) 
-        : extractor(parser, interf), interf(interf), attrb(args...) {}
+	JsonTransmitter(I& interface, P parser, const Ts& ... args) 
+        : parser(parser), interface(interface), attrb(args...) {}
 
 	void transmitt()
 	{
-		apply(extractor, attrb);
+        interface.print(parser.head);
+		apply(parser, attrb);
+        interface.print(parser.foot);
 	}
 
 public:
-	TrExtractor<P, I> extractor;
-    I& interf;
+	P parser;
+    I& interface;
 	Tuple<Ts...> attrb;
 };
