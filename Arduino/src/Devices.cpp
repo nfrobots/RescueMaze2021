@@ -15,7 +15,8 @@ void IrSensor::update()
     total -= values[index];
     values[index] = getRawValue();
     total += values[index];
-    index = ++index % IRSM;
+    int temp = (++index) % IRSM;
+    index = temp;
     value = total / IRSM;
 }
 
