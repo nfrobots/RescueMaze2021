@@ -54,7 +54,7 @@ asl::size_t get_size(const Tuple<Ts...>&)
 }
 
 template<asl::size_t Index = 0, typename C, typename ... Ts>
-typename enable_if<Index >= sizeof...(Ts), void>::type apply(const C& callable, Tuple<Ts...>& tuple) {} //base case
+typename enable_if<Index >= sizeof...(Ts), void>::type apply(const C&, Tuple<Ts...>&) {} //base case
 
 template<asl::size_t Index = 0, typename C, typename ... Ts>
 typename enable_if<Index < sizeof...(Ts), void>::type apply(const C& callable, Tuple<Ts...>& tuple)
