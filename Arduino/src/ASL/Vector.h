@@ -69,7 +69,7 @@ namespace asl
     Vector<T>::Vector(Vector &&other) noexcept
     {
         size = other.size;
-        capacity = other.size;
+        capacity = other.capacity;
         arr = other.arr;
         other.arr = nullptr;
     }
@@ -125,7 +125,7 @@ namespace asl
         if (this == &other)
             return *this;
         size = other.size;
-        capacity = other.size;
+        capacity = other.capacity;
         delete[] arr;
         arr = other.arr;
         other.arr = nullptr;
