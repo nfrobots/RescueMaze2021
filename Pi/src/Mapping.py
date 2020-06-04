@@ -60,7 +60,7 @@ class _Vctr:
         """
         self.x = x
         self.y = y
-        self.rotation = rotation
+        self.direction = rotation
 
 
 MAZE_TILE_TEMPLATE =  {
@@ -220,6 +220,9 @@ class Map:
         self.sizeX = newSizeX
         self.sizeY = newSizeY
 
+        self.robot.x += xOffset
+        self.robot.y += yOffset
+
     def relDirectionToDirection(self, relDirection):
         """Converts relative direction to absolute direction from robot perspective
 
@@ -235,7 +238,7 @@ class Map:
         if not isinstance(relDirection, Constants.RelDirection):
             raise TypeError("given argument is not of type Constants.RelDirection")
 
-        return Constants.Direction((self.robot.rotation.value + relDirection.value) % 4)
+        return Constants.Direction((self.robot.direction.value + relDirection.value) % 4)
 
     def rotateRobot(self, relDirection):
         """Rotates robot by given relative rotation
@@ -249,7 +252,7 @@ class Map:
         if not isinstance(relDirection, Constants.RelDirection):
             raise TypeError("given argument is not of type Constants.RelDirection")
 
-        self.robot.rotation = self.relDirectionToDirection(relDirection)
+        self.robot.direction = self.relDirectionToDirection(relDirection)
 
     def getRobotPosition(self):
         """Gets robot position
@@ -265,7 +268,32 @@ class Map:
         Returns:
             Constants.Direction: direction of robot
         """
-        return self.robot.rotation
+        return self.robot.direction
+
+    def driveRobot(self, relDirection):
+        """rotates and moves robot in specified direction
+
+        Args:
+            relDirection (Constants.RelDirection): relative direction to drive to
+        """
+        self.robot.direction = self.relDirectionToDirection(relDirection)
+        if self.robot.direction == Constants.Direction.NORTH:
+            if self.robot.y < 1:
+                self.expand(Constants.Direction.NORTH)
+            self.robot.y -= 1
+        elif self.robot.direction == Constants.Direction.SOUTH:
+            if self.robot.y > self.sizeY - 2:
+                self.expand(Constants.Direction.SOUTH)
+            self.robot.y += 1
+        elif self.robot.direction == Constants.Direction.WEST:
+            if self.robot.x < 1:
+                self.expand(Constants.Direction.WEST)
+            self.robot.x -= 1
+        elif self.robot.direction == Constants.Direction.EAST:
+            if self.robot.x > self.sizeX - 2:
+                self.expand(Constants.Direction.EAST)
+            self.robot.x += 1
+        
 
     def save(self, path):
         obj = {
@@ -273,7 +301,7 @@ class Map:
             "sizeY": self.sizeY,
             "robotX": self.robot.x,
             "robotY": self.robot.y,
-            "robotDirection": str(self.robot.rotation),
+            "robotDirection": str(self.robot.direction),
             "Map": {}
         }
         for y in range(self.sizeY):
