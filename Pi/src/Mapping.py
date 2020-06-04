@@ -296,6 +296,11 @@ class Map:
         
 
     def save(self, path):
+        """saves map to json file
+
+        Args:
+            path (str): path to json file
+        """
         obj = {
             "sizeX": self.sizeX,
             "sizeY": self.sizeY,
