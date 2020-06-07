@@ -14,7 +14,7 @@ mapFrame = tkinter.Frame(window, relief='flat', borderwidth=4)
 mapFrame.pack(fill=tkinter.BOTH, expand=1)
 mapCanvas = tkinter.Canvas(mapFrame)
 
-with open("tools/map.json") as f:
+with open("Pi/out/map.json") as f:
     mapData = json.load(f)
 
 
@@ -42,7 +42,7 @@ for posStr in mapData["Map"]:
     else:
         southColor = emptyColor
     if mapData["Map"][posStr]["Direction.EAST"] == True:
-        easthColor = wallColor
+        eastColor = wallColor
     else:
         eastColor = emptyColor
     if mapData["Map"][posStr]["Direction.WEST"] == True:
@@ -71,7 +71,7 @@ for posStr in mapData["Map"]:
 robotSize = 0.2 * lineLen
 
 px = mapData["robotX"] * tileSize + pad + (lineLen - robotSize) / 2
-py = mapData["robotX"] * tileSize + pad + (lineLen - robotSize) / 2
+py = mapData["robotY"] * tileSize + pad + (lineLen - robotSize) / 2
 mapCanvas.create_rectangle(px, py, px + robotSize, py + robotSize, fill="#f0f", outline="")
 
 mapCanvas.pack(fill=tkinter.BOTH, expand=1)
