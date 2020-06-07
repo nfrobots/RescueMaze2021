@@ -1,0 +1,144 @@
+{
+    "sizeX": 3,
+    "sizeY": 5,
+    "robotX": 0,
+    "robotY": 1,
+    "robotDirection": "Direction.SOUTH",
+    "Map": {
+        "0,0": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": true,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "1,0": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": true,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "2,0": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "0,1": {
+            "Direction.NORTH": true,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "1,1": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": true,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "2,1": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "0,2": {
+            "Direction.NORTH": true,
+            "Direction.SOUTH": false,
+            "Direction.WEST": true,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "1,2": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": true,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": true
+        },
+        "2,2": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": true,
+            "BLACK": false
+        },
+        "0,3": {
+            "Direction.NORTH": true,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "1,3": {
+            "Direction.NORTH": true,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "2,3": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "0,4": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": true,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "1,4": {
+            "Direction.NORTH": false,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        },
+        "2,4": {
+            "Direction.NORTH": true,
+            "Direction.SOUTH": false,
+            "Direction.WEST": false,
+            "Direction.EAST": false,
+            "VICTIM": false,
+            "RAMP": false,
+            "BLACK": false
+        }
+    }
+}
