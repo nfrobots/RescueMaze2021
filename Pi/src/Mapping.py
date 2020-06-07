@@ -317,3 +317,73 @@ class Map:
 
         with open(path, 'w') as f:
             json.dump(obj, f)
+
+    def findPath(self, startX, startY, endX, endY):
+        class _ANode:
+            def __init__(self, x, y, endX, endY, parent=None):
+                self.x = x
+                self.y = y
+                self.parent = parent
+                if parent is not None:
+                    self.gCost = parent.gCost + 1
+                else:
+                    self.gCost = 0
+                self.hCost = abs(x - endX) + abs(y - endY)
+                self.f_cost = self.gCost + self.hCost
+            
+            def __repr__(self):
+                return "ANode at {}, {}".format(self.x, self.y)
+        
+        openList = [_ANode(startX, startY, endX, endY)]
+        closedList = [] # already visited nodes
+
+        while True:
+            if not len(openList) > 0: # no possible path
+                return []
+            else:
+                current = openList[0]
+
+            for node in openList:
+                if node.f_cost < current.f_cost or (node.f_cost == current.f_cost and node.gCost < current.gCost):
+                    current = node
+
+            openList.remove(current)
+            closedList.append(current)
+
+            neighbors = []
+            if self.get(current.x, current.y)[Constants.Direction.NORTH] is False and current.y - 1 >= 0:
+                neighbors.append(_ANode(current.x, current.y - 1, endX, endY, current))
+            if self.get(current.x, current.y)[Constants.Direction.SOUTH] is False and current.y + 1 < self.sizeY:
+                neighbors.append(_ANode(current.x, current.y + 1, endX, endY, current))
+            if self.get(current.x, current.y)[Constants.Direction.WEST] is False and current.x - 1 >= 0:
+                neighbors.append(_ANode(current.x - 1, current.y, endX, endY, current))
+            if self.get(current.x, current.y)[Constants.Direction.EAST] is False and current.x + 1 < self.sizeX:
+                neighbors.append(_ANode(current.x + 1, current.y, endX, endY, current))
+
+            for neighbour in neighbors:
+                alreadyVisited = False
+
+                if neighbour.x == endX and neighbour.y == endY:
+                    ret = [neighbour]
+                    node = neighbour.parent
+                    while node is not None:
+                        ret.append(node)
+                        node = node.parent
+                    ret.reverse()
+                    return ret
+
+                for closedNode in closedList:
+                    if neighbour.x == closedNode.x and neighbour.y == closedNode.y:
+                        alreadyVisited = True
+                        break
+
+                for openNode in openList:
+                    if neighbour.x == openNode.x and neighbour.y == openNode.y:
+                        if neighbour.f_cost < openNode.f_cost or (neighbour.f_cost == openNode.f_cost and neighbour.gCost < openNode.gCost):
+                            openList.remove(openNode)
+                            openList.append(neighbour)
+                        alreadyVisited = True
+                        break
+
+                if not alreadyVisited:
+                    openList.append(neighbour)
