@@ -317,9 +317,3 @@ class Map:
 
         with open(path, 'w') as f:
             json.dump(obj, f)
-
-def printShape(mp):
-    for row in mp:
-        for _ in row:
-            print("x", end = ' ')
-        print()
