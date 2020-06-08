@@ -2,6 +2,7 @@ import copy
 import json
 
 import Constants
+import Logger
 
 
 class Position:
@@ -133,7 +134,6 @@ class MazeTile:
 class Map:
     """Map consisting of MazeTiles and a robot"""
     def __init__(self, tile = MazeTile()):
-        
         self.map = [[tile]]
         self.sizeX = 1
         self.sizeY = 1
@@ -169,7 +169,7 @@ class Map:
         else:
             return False
 
-    def expand(self, direction):
+    def _expand(self, direction):
         """Expands map in specified direction
 
         Args:
@@ -240,6 +240,7 @@ class Map:
 
         return Constants.Direction((self.robot.direction.value + relDirection.value) % 4)
 
+    @Logger.iLog
     def rotateRobot(self, relDirection):
         """Rotates robot by given relative rotation
 
@@ -270,6 +271,7 @@ class Map:
         """
         return self.robot.direction
 
+    @Logger.iLog
     def driveRobot(self, relDirection):
         """rotates and moves robot in specified direction
 
@@ -279,19 +281,19 @@ class Map:
         self.robot.direction = self.relDirectionToDirection(relDirection)
         if self.robot.direction == Constants.Direction.NORTH:
             if self.robot.y < 1:
-                self.expand(Constants.Direction.NORTH)
+                self._expand(Constants.Direction.NORTH)
             self.robot.y -= 1
         elif self.robot.direction == Constants.Direction.SOUTH:
             if self.robot.y > self.sizeY - 2:
-                self.expand(Constants.Direction.SOUTH)
+                self._expand(Constants.Direction.SOUTH)
             self.robot.y += 1
         elif self.robot.direction == Constants.Direction.WEST:
             if self.robot.x < 1:
-                self.expand(Constants.Direction.WEST)
+                self._expand(Constants.Direction.WEST)
             self.robot.x -= 1
         elif self.robot.direction == Constants.Direction.EAST:
             if self.robot.x > self.sizeX - 2:
-                self.expand(Constants.Direction.EAST)
+                self._expand(Constants.Direction.EAST)
             self.robot.x += 1
         
 

@@ -7,14 +7,16 @@ GLOBAL_IMAGES = {}
 W_WIDTH = 1000
 W_HEIGHT = 1000
 
+linewidth = 3
+pad = 7
+wallColor = "#000"
+emptyColor = "#bbb"
+
 def drawMap(mapData, mapCanvas):
     global GLOBAL_IMAGES
-    linewidth = 3
-    pad = 7
     tileSize = (min(W_WIDTH, W_HEIGHT) - (pad * 2)) / max(mapData["sizeX"], mapData["sizeY"])
     lineLen = tileSize - pad
-    wallColor = "#000"
-    emptyColor = "#bbb"
+
     GLOBAL_IMAGES = {
         "VICTIM": ImageTk.PhotoImage(Image.open("tools/images/Victim.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
         "BLACK": ImageTk.PhotoImage(Image.open("tools/images/Black.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
@@ -69,20 +71,20 @@ def drawMap(mapData, mapCanvas):
     mapCanvas.create_image(px, py, anchor=tkinter.NW, image=GLOBAL_IMAGES["ROBOT"][mapData["robotDirection"]])
 
 
+if __name__ == "__main__":
+    window = tkinter.Tk()
+    window.geometry("{}x{}".format(W_WIDTH, W_HEIGHT))
+    window.resizable(0, 0)
+    window.configure(bg="white")
 
-window = tkinter.Tk()
-window.geometry("{}x{}".format(W_WIDTH, W_HEIGHT))
-window.resizable(0, 0)
-window.configure(bg="white")
+    frm = tkinter.Frame(window, relief='flat', borderwidth=4)
+    frm.pack(fill=tkinter.BOTH, expand=1)
+    cv = tkinter.Canvas(frm)
+    cv.pack(fill=tkinter.BOTH, expand=1)
 
-frm = tkinter.Frame(window, relief='flat', borderwidth=4)
-frm.pack(fill=tkinter.BOTH, expand=1)
-cv = tkinter.Canvas(frm)
-cv.pack(fill=tkinter.BOTH, expand=1)
+    with open("Pi/out/map.json") as f:
+        data = json.load(f)
 
-with open("Pi/out/map.json") as f:
-    data = json.load(f)
+    drawMap(data, cv)
 
-drawMap(data, cv)
-
-window.mainloop()
+    window.mainloop()
