@@ -18,14 +18,14 @@ def drawMap(mapData, mapCanvas):
     lineLen = tileSize - pad
 
     GLOBAL_IMAGES = {
-        "VICTIM": ImageTk.PhotoImage(Image.open("tools/images/Victim.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
-        "BLACK": ImageTk.PhotoImage(Image.open("tools/images/Black.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
-        "RAMP": ImageTk.PhotoImage(Image.open("tools/images/Ramp.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
+        "VICTIM": ImageTk.PhotoImage(Image.open("images/Victim.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
+        "BLACK": ImageTk.PhotoImage(Image.open("images/Black.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
+        "RAMP": ImageTk.PhotoImage(Image.open("images/Ramp.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
         "ROBOT": {
-            "Direction.NORTH": ImageTk.PhotoImage(Image.open("tools/images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
-            "Direction.SOUTH": ImageTk.PhotoImage(Image.open("tools/images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR).rotate(180, Image.BILINEAR)),
-            "Direction.WEST": ImageTk.PhotoImage(Image.open("tools/images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR).rotate(90, Image.BILINEAR)),
-            "Direction.EAST": ImageTk.PhotoImage(Image.open("tools/images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR).rotate(270, Image.BILINEAR)),
+            "Direction.NORTH": ImageTk.PhotoImage(Image.open("images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
+            "Direction.SOUTH": ImageTk.PhotoImage(Image.open("images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR).rotate(180, Image.BILINEAR)),
+            "Direction.WEST": ImageTk.PhotoImage(Image.open("images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR).rotate(90, Image.BILINEAR)),
+            "Direction.EAST": ImageTk.PhotoImage(Image.open("images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR).rotate(270, Image.BILINEAR)),
         }
     }
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     cv = tkinter.Canvas(frm)
     cv.pack(fill=tkinter.BOTH, expand=1)
 
-    with open("Pi/out/map.json") as f:
+    with open("./out/map.json") as f:
         data = json.load(f)
 
     drawMap(data, cv)
