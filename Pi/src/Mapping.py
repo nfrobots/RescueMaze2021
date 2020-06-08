@@ -332,7 +332,7 @@ class Map:
                 self.f_cost = self.gCost + self.hCost
             
             def __repr__(self):
-                return "ANode at {}, {}".format(self.x, self.y)
+                return "ANode at ({},{})".format(self.x, self.y)
         
         openList = [_ANode(startX, startY, endX, endY)]
         closedList = [] # already visited nodes
