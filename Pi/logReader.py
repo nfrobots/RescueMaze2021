@@ -52,6 +52,8 @@ cv.pack(fill=tkinter.BOTH, expand=1)
 
 m = Mapping.Map()
 
+mapDrawer.drawMap(m._store(), cv)
+
 index = 0
 def step():
     global index
