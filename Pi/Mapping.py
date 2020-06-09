@@ -305,6 +305,7 @@ class Map:
             self.robot.x += 1
         
     def _store(self):
+        """Returns map information as python dict."""
         obj = {
             "sizeX": self.sizeX,
             "sizeY": self.sizeY,
@@ -330,6 +331,7 @@ class Map:
             json.dump(self._store(), f)
 
     def saves(self):
+        """Returns json string containing map information."""
         return json.dumps(self._store())
 
     def findPath(self, startX, startY, endX, endY):
