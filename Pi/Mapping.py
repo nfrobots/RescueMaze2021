@@ -65,17 +65,17 @@ class _Vctr:
 
 
 MAZE_TILE_TEMPLATE =  {
-    Constants.Direction.NORTH: False,
-    Constants.Direction.SOUTH: False,
-    Constants.Direction.WEST: False,
-    Constants.Direction.EAST: False,
-    Constants.VICTIM: False,
-    Constants.RAMP: False,
-    Constants.BLACK: False
+    Constants.Direction.NORTH: False,   # north wall existing
+    Constants.Direction.SOUTH: False,   # south wall existing
+    Constants.Direction.WEST: False,    # west wall existing
+    Constants.Direction.EAST: False,    # east wall existing
+    Constants.RAMP: False,              # ramp existing
+    Constants.VICTIM: False,            # victim existing
+    Constants.BLACK: False              # black tile existing
 }
 
 class MazeTile:
-    """Represents tile in maze. Supports custom attributes"""
+    """Represents tile in maze"""
 
     def __init__(self, template = MAZE_TILE_TEMPLATE, _cpy = copy.deepcopy):
         """Initializes MazeTile
@@ -149,7 +149,7 @@ class Map:
         Returns:
             MazeTile / None: MazeTile at specified position, None if it does not exist
         """
-        if x < self.sizeX and y < self.sizeY:
+        if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
             return self.map[y][x]
 
     def set(self, x, y, value):
@@ -163,8 +163,16 @@ class Map:
         Returns:
             bool: True if successfull, otherwise False
         """
-        if x < self.sizeX and y < self.sizeY:
+        if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
             self.map[y][x] = value
+            return True
+        else:
+            return False
+
+    @Logger.iLog
+    def setAttribute(self, x, y, attribute, value):
+        if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
+            self.map[y][x][attribute] = value
             return True
         else:
             return False
@@ -296,13 +304,7 @@ class Map:
                 self._expand(Constants.Direction.EAST)
             self.robot.x += 1
         
-
-    def save(self, path):
-        """saves map to json file
-
-        Args:
-            path (str): path to json file
-        """
+    def _store(self):
         obj = {
             "sizeX": self.sizeX,
             "sizeY": self.sizeY,
@@ -316,9 +318,19 @@ class Map:
                 obj["Map"][str(x) + "," + str(y)] = {}
                 for key in self.map[y][x]._data:
                     obj["Map"][str(x) + "," + str(y)][str(key)] = self.map[y][x][key]
+        return obj
 
+    def save(self, path):
+        """saves map to json file
+
+        Args:
+            path (str): path to json file
+        """
         with open(path, 'w') as f:
-            json.dump(obj, f)
+            json.dump(self._store(), f)
+
+    def saves(self):
+        return json.dumps(self._store())
 
     def findPath(self, startX, startY, endX, endY):
         class _ANode:
@@ -353,13 +365,13 @@ class Map:
             closedList.append(current)
 
             neighbors = []
-            if self.get(current.x, current.y)[Constants.Direction.NORTH] is False and current.y - 1 >= 0:
+            if self.get(current.x, current.y)[Constants.Direction.NORTH] is False and current.y - 1 >= 0 and self.get(current.x, current.y - 1)[Constants.BLACK] is False:
                 neighbors.append(_ANode(current.x, current.y - 1, endX, endY, current))
-            if self.get(current.x, current.y)[Constants.Direction.SOUTH] is False and current.y + 1 < self.sizeY:
+            if self.get(current.x, current.y)[Constants.Direction.SOUTH] is False and current.y + 1 < self.sizeY and self.get(current.x, current.y + 1)[Constants.BLACK] is False:
                 neighbors.append(_ANode(current.x, current.y + 1, endX, endY, current))
-            if self.get(current.x, current.y)[Constants.Direction.WEST] is False and current.x - 1 >= 0:
+            if self.get(current.x, current.y)[Constants.Direction.WEST] is False and current.x - 1 >= 0 and self.get(current.x - 1, current.y)[Constants.BLACK] is False:
                 neighbors.append(_ANode(current.x - 1, current.y, endX, endY, current))
-            if self.get(current.x, current.y)[Constants.Direction.EAST] is False and current.x + 1 < self.sizeX:
+            if self.get(current.x, current.y)[Constants.Direction.EAST] is False and current.x + 1 < self.sizeX and self.get(current.x + 1, current.y)[Constants.BLACK] is False:
                 neighbors.append(_ANode(current.x + 1, current.y, endX, endY, current))
 
             for neighbour in neighbors:
