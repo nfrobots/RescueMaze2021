@@ -4,8 +4,8 @@ from PIL import Image, ImageTk
 
 GLOBAL_IMAGES = {}
 
-W_WIDTH = 1000
-W_HEIGHT = 1000
+W_WIDTH = 1300
+W_HEIGHT = 800
 
 linewidth = 3
 pad = 7
@@ -14,7 +14,7 @@ emptyColor = "#bbb"
 
 def drawMap(mapData, mapCanvas):
     global GLOBAL_IMAGES
-    tileSize = (min(W_WIDTH, W_HEIGHT) - (pad * 2)) / max(mapData["sizeX"], mapData["sizeY"])
+    tileSize = (min(W_WIDTH - 50, W_HEIGHT - 50) - (pad * 2)) / max(mapData["sizeX"], mapData["sizeY"])
     lineLen = tileSize - pad
 
     GLOBAL_IMAGES = {

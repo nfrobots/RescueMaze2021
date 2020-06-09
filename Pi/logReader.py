@@ -57,7 +57,6 @@ def step():
     global index
     instruction = instructions[index]
     if instruction == "":
-        print("moin")
         return
     fmt = instruction.split(";")
     function = fmt[0]
@@ -66,7 +65,7 @@ def step():
     mapDrawer.drawMap(m._store(), cv)
     index += 1
 
-button = tkinter.Button(frm, width=10, height=2, bg="green", command=step)
+button = tkinter.Button(frm, width=10, height=2, bg="green", border="0", command=step)
 button.pack()
 
 root.mainloop()
