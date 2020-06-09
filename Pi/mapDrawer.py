@@ -29,6 +29,8 @@ def drawMap(mapData, mapCanvas):
         }
     }
 
+    mapCanvas.delete("all")
+
     for posStr in mapData["Map"]:
         x, y = [int(a) for a in posStr.split(',')]
 
