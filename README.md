@@ -1,6 +1,6 @@
 # RescueMaze2021
 
-## Everything is currently "work in progress"
+## Everything is currently "work in progress" and in a verry early state of development
 
 Repo for robocup junior
 
