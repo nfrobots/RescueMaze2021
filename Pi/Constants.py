@@ -12,6 +12,7 @@ class RelDirection(Enum):
     BACKWARD = 2
     LEFT = 3
 
+KNOWN = "KNOWN"
 VICTIM = "VICTIM"
 RAMP = "RAMP"
 BLACK = "BLACK"
