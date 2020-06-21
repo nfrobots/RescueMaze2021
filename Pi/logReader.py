@@ -57,14 +57,17 @@ mapDrawer.drawMap(m._store(), cv)
 index = 0
 def step():
     global index
-    instruction = instructions[index]
-    if instruction == "":
-        return
-    fmt = instruction.split(";")
-    function = fmt[0]
-    args = [convertArgs(a) for a in fmt[1].replace(")", "").split(", ")[1::]]
-    getattr(m, function)(*args)
-    mapDrawer.drawMap(m._store(), cv)
+    while instructions[index] != "STEP":
+        print(instructions[index])
+        instruction = instructions[index]
+        if instruction == "":
+            return
+        fmt = instruction.split(";")
+        function = fmt[0]
+        args = [convertArgs(a) for a in fmt[1].replace(")", "").split(", ")[1::]]
+        getattr(m, function)(*args)
+        mapDrawer.drawMap(m._store(), cv)
+        index += 1
     index += 1
 
 button = tkinter.Button(frm, width=10, height=2, bg="green", border="0", command=step)
