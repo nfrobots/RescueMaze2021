@@ -1,5 +1,6 @@
 import copy
 import json
+import numpy as np
 
 import Constants
 import Logger
@@ -65,6 +66,7 @@ class _Vctr:
 
 
 MAZE_TILE_TEMPLATE =  {
+    Constants.KNOWN: False,             # tile is known
     Constants.Direction.NORTH: False,   # north wall existing
     Constants.Direction.SOUTH: False,   # south wall existing
     Constants.Direction.WEST: False,    # west wall existing
@@ -77,7 +79,7 @@ MAZE_TILE_TEMPLATE =  {
 class MazeTile:
     """Represents tile in maze"""
 
-    def __init__(self, template = MAZE_TILE_TEMPLATE, _cpy = copy.deepcopy):
+    def __init__(self, template = MAZE_TILE_TEMPLATE, _cpy = copy.copy):
         """Initializes MazeTile
 
         Args:
@@ -134,7 +136,8 @@ class MazeTile:
 class Map:
     """Map consisting of MazeTiles and a robot"""
     def __init__(self, tile = MazeTile()):
-        self.map = [[tile]]
+        self.map = np.zeros((1,1), MazeTile)
+        self.map[0, 0] = MazeTile()
         self.sizeX = 1
         self.sizeY = 1
         self.robot = _Vctr(0, 0, Constants.Direction.NORTH)
@@ -150,7 +153,7 @@ class Map:
             MazeTile / None: MazeTile at specified position, None if it does not exist
         """
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
-            return self.map[y][x]
+            return self.map[y, x]
 
     def set(self, x, y, value):
         """Sets MazeTile at specified position
@@ -164,7 +167,7 @@ class Map:
             bool: True if successfull, otherwise False
         """
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
-            self.map[y][x] = value
+            self.map[y, x] = value
             return True
         else:
             return False
@@ -172,7 +175,7 @@ class Map:
     @Logger.iLog
     def setAttribute(self, x, y, attribute, value):
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
-            self.map[y][x][attribute] = value
+            self.map[y, x][attribute] = value
             return True
         else:
             return False
@@ -190,21 +193,23 @@ class Map:
             raise TypeError("given argument is not of type Constants.RelDirection")
 
         if direction == Constants.Direction.NORTH:
-            newMap = [[None for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
-            newMap[0] = [MazeTile() for x in range(self.sizeX)]
+            newMap = np.zeros((self.sizeY + 1, self.sizeX), MazeTile)
+            for x in range(self.sizeX):
+                newMap[0, x] = MazeTile()
             newSizeX = self.sizeX
             newSizeY = self.sizeY + 1
             xOffset = 0
             yOffset = 1
         elif direction == Constants.Direction.SOUTH:
-            newMap = [[None for _ in range(self.sizeX)] for _ in range(self.sizeY + 1)]
-            newMap[self.sizeY] = [MazeTile() for x in range(self.sizeX)]
+            newMap = np.zeros((self.sizeY + 1, self.sizeX), MazeTile)
+            for x in range(self.sizeX):
+                newMap[self.sizeY, x] = MazeTile()
             newSizeX = self.sizeX
             newSizeY = self.sizeY + 1
             xOffset = 0
             yOffset = 0
         elif direction == Constants.Direction.WEST:
-            newMap = [[None for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
+            newMap = np.zeros((self.sizeY, self.sizeX + 1), MazeTile)
             for y in range(self.sizeY):
                 newMap[y][0] = MazeTile()
             newSizeX = self.sizeX + 1
@@ -212,9 +217,9 @@ class Map:
             xOffset = 1
             yOffset = 0
         elif direction == Constants.Direction.EAST:
-            newMap = [[None for _ in range(self.sizeX + 1)] for _ in range(self.sizeY)]
+            newMap = np.zeros((self.sizeY, self.sizeX + 1), MazeTile)
             for y in range(self.sizeY):
-                newMap[y][self.sizeX] = MazeTile()
+                newMap[y, self.sizeX] = MazeTile()
             newSizeX = self.sizeX + 1
             newSizeY = self.sizeY
             xOffset = 0
@@ -222,7 +227,7 @@ class Map:
 
         for y in range(self.sizeY):
             for x in range(self.sizeX):
-                newMap[y + yOffset][x + xOffset] = self.map[y][x]
+                newMap[y + yOffset, x + xOffset] = self.map[y, x]
 
         self.map = newMap
         self.sizeX = newSizeX
@@ -248,21 +253,6 @@ class Map:
 
         return Constants.Direction((self.robot.direction.value + relDirection.value) % 4)
 
-    @Logger.iLog
-    def rotateRobot(self, relDirection):
-        """Rotates robot by given relative rotation
-
-        Args:
-            relDirection (Constants.RelDirection): direction to rotate robot by
-        
-        Raises:
-            TypeError: if relDirection is not of type Constants.RelDirection
-        """
-        if not isinstance(relDirection, Constants.RelDirection):
-            raise TypeError("given argument is not of type Constants.RelDirection")
-
-        self.robot.direction = self.relDirectionToDirection(relDirection)
-
     def getRobotPosition(self):
         """Gets robot position
 
@@ -280,13 +270,23 @@ class Map:
         return self.robot.direction
 
     @Logger.iLog
-    def driveRobot(self, relDirection):
-        """rotates and moves robot in specified direction
+    def rotateRobot(self, relDirection):
+        """Rotates robot by given relative rotation
 
         Args:
-            relDirection (Constants.RelDirection): relative direction to drive to
+            relDirection (Constants.RelDirection): direction to rotate robot by
+        
+        Raises:
+            TypeError: if relDirection is not of type Constants.RelDirection
         """
+        if not isinstance(relDirection, Constants.RelDirection):
+            raise TypeError("given argument is not of type Constants.RelDirection")
+
         self.robot.direction = self.relDirectionToDirection(relDirection)
+
+    @Logger.iLog
+    def move(self):
+        """moves robot forward"""
         if self.robot.direction == Constants.Direction.NORTH:
             if self.robot.y < 1:
                 self._expand(Constants.Direction.NORTH)
@@ -303,6 +303,16 @@ class Map:
             if self.robot.x > self.sizeX - 2:
                 self._expand(Constants.Direction.EAST)
             self.robot.x += 1
+
+    def driveRobot(self, relDirection):
+        """rotates and moves robot in specified direction
+
+        Args:
+            relDirection (Constants.RelDirection): relative direction to drive to
+        """
+        self.rotateRobot(relDirection)
+        self.move()
+
         
     def _store(self):
         """Returns map information as python dict."""
@@ -317,8 +327,8 @@ class Map:
         for y in range(self.sizeY):
             for x in range(self.sizeX):
                 obj["Map"][str(x) + "," + str(y)] = {}
-                for key in self.map[y][x]._data:
-                    obj["Map"][str(x) + "," + str(y)][str(key)] = self.map[y][x][key]
+                for key in self.map[y, x]._data:
+                    obj["Map"][str(x) + "," + str(y)][str(key)] = self.map[y, x][key]
         return obj
 
     def save(self, path):
