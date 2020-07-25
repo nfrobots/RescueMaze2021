@@ -2,9 +2,7 @@ import copy
 import json
 import numpy as np
 
-import Constants
-import Logger
-
+from RMMLIB4 import Constants, Logger
 
 class Position:
     """Position in 2 dimensional space"""
