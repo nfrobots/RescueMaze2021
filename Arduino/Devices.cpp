@@ -42,7 +42,7 @@ ColorSensor::ColorSensor(asl::uint8_t outPin, asl::uint8_t s0Pin, asl::uint8_t s
     : outPin(outPin), s2Pin(s2Pin), s3Pin(s3Pin)
 {
     pinMode(s0Pin, OUTPUT);
-    pinMode(s1Pin, OUTPUT);
+     pinMode(s1Pin, OUTPUT);
     pinMode(s2Pin, OUTPUT);
     pinMode(s3Pin, OUTPUT);
     pinMode(outPin, INPUT);
