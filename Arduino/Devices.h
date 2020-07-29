@@ -2,7 +2,7 @@
 
 #include "ASL/types.h"
 
-const int IRSM = 5;
+constexpr int IRSM = 5;
 
 class IrSensor
 {
@@ -27,7 +27,7 @@ struct RGBAValue
     unsigned int red, green, blue, alpha;
 };
 
-const int CSM = 5;
+constexpr int CSM = 5;
 
 class ColorSensor
 {
