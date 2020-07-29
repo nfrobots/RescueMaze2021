@@ -28,7 +28,7 @@ public:
  * 
  * Param:
  *  callable: actual parser callable class (lambda!) which takes a name as String and value as any type. It should return a String.
- *  interface: Class with .print() function of type returned by C such as Serial.
+ *  interface: Class with .print() function taking single argument returned by callable. E.g. Serial
  *  head: callable class (lambda!) which is executed at the beginning of each transmittion
  *  foot: callable class (lambda!) which is executed at the end of eacht transmittion
  */
@@ -37,26 +37,26 @@ template<typename C, typename I, typename H, typename F>
 class TrParser
 {
 public:
-	TrParser(C callable, I& interface, H head, F foot)
+	TrParser(const C& callable, I& interface, const H& head, const F& foot) //can not pass interface as constant reference as print function may not be constant
      : callable(callable), interface(interface), head(head), foot(foot) {}
 
 	template<typename T>
-	void operator()(TrValue<T>& trvalue) const
+	void operator()(const TrValue<T>& trvalue) const
 	{
 		interface.print(callable(trvalue.name, trvalue.ref));
 	}
 
-	C callable;
+	const C& callable;
     I& interface;
-    H head;
-    F foot;
+    const H& head;
+    const F& foot;
 };
 
 /**
  * Default Json parser
  */
 TrParser JSON_TR_PARSER_DEFAULT(
-    [](auto name, auto value) {
+    [](const auto& name, const auto& value) {
         return "\t\"" + name + "\": " + value + ",\n";
     },
     Serial,
@@ -78,7 +78,7 @@ template<template<typename, typename, typename, typename> typename P,
 class JsonTransmitter
 {
 public:
-	JsonTransmitter(P<C, I, H, F> parser, const Ts& ... args) 
+	JsonTransmitter(const P<C, I, H, F>& parser, const Ts& ... args)
         : parser(parser), interface(parser.interface), attrb(args...) {}
 
 	void transmitt()
@@ -89,7 +89,7 @@ public:
 	}
 
 private:
-	P<C, I, H, F> parser;
+	const P<C, I, H, F>& parser;
     I& interface;
 	Tuple<Ts...> attrb;
 };
