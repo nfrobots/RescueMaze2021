@@ -2,30 +2,30 @@
 
 #include <Arduino.h>
 
-IrSensor::IrSensor(asl::uint8_t pin) : pin(pin)
+AnalogSensor::AnalogSensor(asl::uint8_t pin) : pin(pin)
 {
-    for(int i = 0; i < IRSM; i++)
+    for(int i = 0; i < ANALOG_SENSOR_SMOOTHNESS; i++)
     {
         update();
     }
 }
 
-void IrSensor::update()
+void AnalogSensor::update()
 {
     total -= values[index];
     values[index] = getRawValue();
     total += values[index];
-    int temp = (++index) % IRSM;
+    int temp = (++index) % ANALOG_SENSOR_SMOOTHNESS;
     index = temp;
-    value = total / IRSM;
+    value = total / ANALOG_SENSOR_SMOOTHNESS;
 }
 
-int IrSensor::getValue()
+int AnalogSensor::getValue()
 {
     return value;
 }
 
-int IrSensor::getRawValue()
+int AnalogSensor::getRawValue()
 {
     return analogRead(pin);
 }
@@ -42,7 +42,7 @@ ColorSensor::ColorSensor(asl::uint8_t outPin, asl::uint8_t s0Pin, asl::uint8_t s
     : outPin(outPin), s2Pin(s2Pin), s3Pin(s3Pin)
 {
     pinMode(s0Pin, OUTPUT);
-     pinMode(s1Pin, OUTPUT);
+    pinMode(s1Pin, OUTPUT);
     pinMode(s2Pin, OUTPUT);
     pinMode(s3Pin, OUTPUT);
     pinMode(outPin, INPUT);
@@ -50,6 +50,11 @@ ColorSensor::ColorSensor(asl::uint8_t outPin, asl::uint8_t s0Pin, asl::uint8_t s
     //set freq
     digitalWrite(s0Pin, HIGH);
     digitalWrite(s1Pin, LOW);
+
+    for (int i = 0; i < COLOR_SENSOR_SMOOTHNESS; i++)
+    {
+        update();
+    }
 }
 
 void ColorSensor::update()
@@ -66,13 +71,13 @@ void ColorSensor::update()
     total.blue += values[index].blue;
     total.alpha += values[index].alpha;
 
-    int temp = (++index) % IRSM;
+    int temp = (++index) % COLOR_SENSOR_SMOOTHNESS;
     index = temp;
     
-    value.red = total.red / CSM;
-    value.green = total.green / CSM;
-    value.blue = total.blue / CSM;
-    value.alpha = total.alpha / CSM;
+    value.red = total.red / COLOR_SENSOR_SMOOTHNESS;
+    value.green = total.green / COLOR_SENSOR_SMOOTHNESS;
+    value.blue = total.blue / COLOR_SENSOR_SMOOTHNESS;
+    value.alpha = total.alpha / COLOR_SENSOR_SMOOTHNESS;
 }
 
 RGBAValue ColorSensor::getValue()

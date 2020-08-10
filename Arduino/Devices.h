@@ -2,32 +2,35 @@
 
 #include "ASL/types.h"
 
-constexpr int IRSM = 5;
+constexpr int ANALOG_SENSOR_SMOOTHNESS = 5;
 
-class IrSensor
+class AnalogSensor
 {
 public:
-    IrSensor(asl::uint8_t pin);
+    AnalogSensor(asl::uint8_t pin);
     void update();
     int getValue();
     int getRawValue();
 
     int value = 0; //smoothed value
+
 private:
     asl::uint8_t pin;
-    int values[IRSM];
+    int values[ANALOG_SENSOR_SMOOTHNESS];
     asl::uint8_t index = 0;
     int total = 0;
 };
+
 
 struct RGBAValue
 {
     RGBAValue(unsigned int red, unsigned int green, unsigned int blue, unsigned int alpha);
     RGBAValue();
     unsigned int red, green, blue, alpha;
+    
 };
 
-constexpr int CSM = 5;
+constexpr int COLOR_SENSOR_SMOOTHNESS = 5;
 
 class ColorSensor
 {
@@ -42,7 +45,7 @@ private:
     asl::uint8_t outPin;
     asl::uint8_t s2Pin;
     asl::uint8_t s3Pin;
-    RGBAValue values[CSM];
+    RGBAValue values[COLOR_SENSOR_SMOOTHNESS];
     asl::uint8_t index = 0;
     RGBAValue total;
 };
