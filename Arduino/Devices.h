@@ -27,7 +27,6 @@ struct RGBAValue
     RGBAValue(unsigned int red, unsigned int green, unsigned int blue, unsigned int alpha);
     RGBAValue();
     unsigned int red, green, blue, alpha;
-    
 };
 
 constexpr int COLOR_SENSOR_SMOOTHNESS = 5;
@@ -48,4 +47,26 @@ private:
     RGBAValue values[COLOR_SENSOR_SMOOTHNESS];
     asl::uint8_t index = 0;
     RGBAValue total;
+};
+
+
+constexpr int ROTATION_SENSOR_SMOOTHNESS = 5;
+
+
+
+class RotationSensor
+{
+public:
+    RotationSensor();
+    void update();
+
+    asl::int16_t accelerometerX;
+    asl::int16_t accelerometerY;
+    asl::int16_t accelerometerZ;
+    asl::int16_t temperature;
+    asl::int16_t gyroscopeX;
+    asl::int16_t gyroscopeY;
+    asl::int16_t gyroscopeZ;
+
+private:
 };

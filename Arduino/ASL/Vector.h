@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Tuple.h"
+
 namespace asl
 {
     template <class T>
@@ -13,6 +15,8 @@ namespace asl
     public:
         Vector();
         Vector(int size);
+        template<typename ... Us>
+        Vector(Us ... values);
         ~Vector();
 
         Vector(const Vector &other);
@@ -34,6 +38,18 @@ namespace asl
         size = 0;
         capacity = 1;
         arr = new T[capacity];
+    }
+
+    template<typename T>
+    template<typename ... Us>
+    Vector<T>::Vector(Us ... values)
+    {
+        size = 0;
+        capacity = sizeof...(Us);
+        arr = new T[capacity];
+
+        asl::Tuple<Us...> t(values...);
+        asl::apply([this](auto& value){append(value);}, t);
     }
 
     template <class T>

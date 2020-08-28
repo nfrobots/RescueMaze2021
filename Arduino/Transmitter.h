@@ -17,10 +17,10 @@ template<typename T>
 class TrValue
 {
 public:
-	TrValue(String name, T& ref) : name(name), ref(ref) {}
+	TrValue(String name, const T& ref) : name(name), ref(ref) {}
 
 	String name;
-	T& ref;
+	const T& ref;
 };
 
 /**

@@ -7,7 +7,7 @@ from tkinter import Tk, Frame, Canvas, Button, Label
 from pathlib import Path
 import json
 
-UPDATE_RATE = 500
+REFRESH_RATE = 500 # milliseconds delay to call refresh functions
 
 BUTTON_CONFIG = {
     'bd': 1,
@@ -45,16 +45,16 @@ class App(Tk):
 
         self.enable_module(Home)
 
-        self.update()
-        self.after(UPDATE_RATE, self.update)
+        self.refresh()
+        self.after(REFRESH_RATE, self.update)
 
     def enable_module(self, module):
         self.modules[module].tkraise()
         self.active_module = self.modules[module]
 
-    def update(self):
-        self.active_module.update()
-        self.after(UPDATE_RATE, self.update)
+    def refresh(self):
+        self.active_module.refresh()
+        self.after(REFRESH_RATE, self.refresh)
 
 
 class Home(Frame):
@@ -63,7 +63,7 @@ class Home(Frame):
         self.text = Label(self, text="w: {}; h: {}".format(self.master.winfo_width(), self.master.winfo_height()))
         self.text.pack()
 
-    def update(self):
+    def refresh(self):
         self.text.configure(text="w: {}; h: {}".format(self.master.winfo_width(), self.master.winfo_height()))
 
 
@@ -76,7 +76,7 @@ class MapVisualisation2(Frame):
             data = json.load(f)
         mapDrawer.drawMap(data, canvas)
 
-    def update(self):
+    def refresh(self):
         pass
 
 
@@ -110,16 +110,25 @@ class SensorView(Frame):
         self.modes[mode].tkraise()
         self.active_mode = self.modes[mode]
 
-    def update(self):
-        self.active_mode.update()
+    def refresh(self):
+        self.active_mode.refresh()
 
 
 class SersorViewNumberMode(Frame):
     def __init__(self, root):
         super().__init__(root, bg="yellow")
 
-    def update(self):
+    def refresh(self):
         pass
+
+
+class SensorViewGraphMode(Frame):
+    def __init__(self, root):
+        super().__init__(root, bg="green")
+
+    def refresh(self):
+        pass
+
 
 # should have ratio of about 1.4: eg 28 and 20
 N_TILE_WIDHT = 28
@@ -132,27 +141,38 @@ class SersorViewVisualMode(Frame):
         self.canvas.grid(row=0, column=0, sticky='nswe')
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        self.width, self.height, self.grid_tile_size, self.pad = 0, 0, 0, 0
+        self.width = 0
+        self.height = 0
+        self.grid_tile_size = 0
+        self.pad = 0
+        self.figure_ids = []
 
-    def update(self):
-        self.canvas.delete("all")
+    def refresh(self):
+        self.canvas.delete(*self.figure_ids) # only delete necessary parts, to imporve test performance
+        self.figure_ids = []
         new_width, new_height = self.canvas.winfo_width(), self.canvas.winfo_height()
         if new_width != self.width or new_height != self.height:
+            self.canvas.delete("all")
+
             self.pad = int(min(new_width, new_height) / 100)
             self.grid_tile_size = int(min((new_height - (2 * self.pad)) / N_TILE_HEIGHT, (new_width - (2 * self.pad)) / N_TILE_WIDHT))
+            self.width = new_width
+            self.height = new_height
             
-        for i in range(N_TILE_WIDHT):
-            for j in range(N_TILE_HEIGHT):
-                self.canvas.create_rectangle(self.coord_helper(i, j, i + 1, j + 1), outline="#aaa")
+            for i in range(N_TILE_WIDHT):
+                for j in range(N_TILE_HEIGHT):
+                    self.canvas.create_rectangle(self.coord_helper(i, j, i + 1, j + 1), outline="#aaa")
 
-        self.canvas.create_rectangle(self.coord_helper(1, 2, 2, 8), fill="#555")
+        figure_id = self.canvas.create_rectangle(self.coord_helper(1, 2, 2, 8), fill="#555")
+        self.figure_ids.append(figure_id)
 
     def coord_helper(self, *args):
         return [arg * self.grid_tile_size + self.pad for arg in args]
 
-SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode)
 
+SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 MODULES = (Home, MapVisualisation2, SensorView)
 
-a = App()
-a.mainloop()
+if __name__ == '__main__':
+    a = App()
+    a.mainloop()

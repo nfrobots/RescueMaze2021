@@ -4,6 +4,7 @@
 
 AnalogSensor::AnalogSensor(asl::uint8_t pin) : pin(pin)
 {
+
     for(int i = 0; i < ANALOG_SENSOR_SMOOTHNESS; i++)
     {
         update();
@@ -90,22 +91,22 @@ RGBAValue ColorSensor::getRawValue()
     //Red
     digitalWrite(s2Pin, LOW);
     digitalWrite(s3Pin, LOW);
-    int r = pulseIn(outPin, LOW);
-
-    //Green
-    digitalWrite(s2Pin, HIGH);
-    digitalWrite(s3Pin, HIGH);
-    int g = pulseIn(outPin, LOW);
-
-    //Blue
-    digitalWrite(s2Pin, LOW);
-    digitalWrite(s3Pin, HIGH);
-    int b = pulseIn(outPin, LOW);
+    int r = pulseIn(outPin, LOW, 500);
 
     //Clear
     digitalWrite(s2Pin, HIGH);
     digitalWrite(s3Pin, LOW);
-    int a = pulseIn(outPin, LOW);
+    int a = pulseIn(outPin, LOW, 500);
+
+    //Green
+    digitalWrite(s2Pin, HIGH);
+    digitalWrite(s3Pin, HIGH);
+    int g = pulseIn(outPin, LOW, 500);
+
+    //Blue
+    digitalWrite(s2Pin, LOW);
+    digitalWrite(s3Pin, HIGH);
+    int b = pulseIn(outPin, LOW, 500);
 
     return RGBAValue(r, g, b, a);
 }

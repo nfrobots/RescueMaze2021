@@ -37,7 +37,7 @@ def convertArgs(string):
         return False
     else:
         try:
-            return int(string)
+            return eval(string)
         except ValueError:
             return string
 

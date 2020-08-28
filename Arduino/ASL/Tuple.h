@@ -59,7 +59,8 @@ namespace asl {
     typename enable_if<Index >= sizeof...(Ts), void>::type apply(const C&, Tuple<Ts...>&) {} //base case
 
     template<asl::size_t Index = 0, typename C, typename ... Ts>
-    typename enable_if<Index < sizeof...(Ts), void>::type apply(const C& callable, Tuple<Ts...>& tuple)
+    typename enable_if<Index < sizeof...(Ts), void>::type 
+        apply(const C& callable, Tuple<Ts...>& tuple)
     {
         callable.operator()(get<Index>(tuple));
         apply<Index + 1, C, Ts...>(callable, tuple);
