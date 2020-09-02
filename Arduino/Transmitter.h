@@ -53,9 +53,9 @@ public:
 };
 
 /**
- * Default Json parser
+ * Default Json parsers
  */
-TrParser JSON_TR_PARSER_DEFAULT (
+TrParser JSON_TR_PARSER_READABLE (
     [](const auto& name, const auto& value) {
         return "\t\"" + name + "\": " + value + ",\n";
     },
@@ -64,15 +64,23 @@ TrParser JSON_TR_PARSER_DEFAULT (
     [](){ return String("\t\"time\": " + String(millis()) + "\n}\n"); }
 );
 
+TrParser JSON_TR_PARSER_REDUCED (
+    [](const auto& name, const auto& value) {
+        return '\"' + name + "\": " + value + ',';
+    },
+    Serial,
+    [](){ return String("{"); },
+    [](){ return String("\"time\": " + String(millis()) + '}'); }
+);
+
 /**
- * JsonTransmitter object used to transmitt data sucha as sensor values in (json) format.
+ * Transmitter object used to transmitt data sucha as sensor values in (json) format.
  * Format can be customized.
  * 
  * Param:
- *  parser: TrParser such as JSON_TR_PARSER_DEFAULT
+ *  parser: TrParser such as JSON_TR_PARSER_READABLE
  *  args...: arbitrary amount of TrValues to be transmittted
  */
-
 template<typename C, typename I, typename H, typename F, typename ... Ts>
 class Transmitter
 {
