@@ -1,3 +1,10 @@
+/**
+ * CAREFUL! YOU HAVE FULL CONTROLL ON UPDATING VALUES. 
+ * YOU HAVE TO CALL THE UPDATE FUNCTION EXPLICITLY.
+ * EVEN GETVALUE FUNCTION DOES NOT UPDATE THEM.
+ * IT WILL INSTEAD RETURN THE VALUE FROM THE MOST RECENT UPDATE() CALL.
+*/
+
 #pragma once
 
 #include "ASL/types.h"
@@ -47,26 +54,4 @@ private:
     RGBAValue values[COLOR_SENSOR_SMOOTHNESS];
     asl::uint8_t index = 0;
     RGBAValue total;
-};
-
-
-constexpr int ROTATION_SENSOR_SMOOTHNESS = 5;
-
-
-
-class RotationSensor
-{
-public:
-    RotationSensor();
-    void update();
-
-    asl::int16_t accelerometerX;
-    asl::int16_t accelerometerY;
-    asl::int16_t accelerometerZ;
-    asl::int16_t temperature;
-    asl::int16_t gyroscopeX;
-    asl::int16_t gyroscopeY;
-    asl::int16_t gyroscopeZ;
-
-private:
 };
