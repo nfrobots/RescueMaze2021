@@ -3,16 +3,20 @@ try:
 except ImportError:
     from tools import mapDrawer
 
-from tkinter import Tk, Frame, Canvas, Button, Label
+from tkinter import Tk, Frame, Canvas, Button, Label, Entry
 from pathlib import Path
 import json
+import inspect
 
 REFRESH_RATE = 500 # milliseconds delay to call refresh functions
 
+ACTIVE_BUTTON_COLOR = '#faa'
+INACTIVE_BUTTON_COLOR = '#fff'
+
 BUTTON_CONFIG = {
     'bd': 1,
-    'bg': '#fff',
-    'activebackground': '#aaa'
+    'bg': INACTIVE_BUTTON_COLOR,
+    'activebackground': '#faf'
 }
 
 class App(Tk):
@@ -31,8 +35,8 @@ class App(Tk):
         self.grid_rowconfigure(0, weight=1) # module selector frame expand
         self.grid_columnconfigure(0, weight=1)
 
-        self.module_selectors = {}
-        self.modules = {}
+        self.module_selectors = {} # holds buttons at one of MODULES
+        self.modules = {} # holds instances of MODULES
 
         for counter, Module in enumerate(MODULES):
             self.module_selectors[Module] = Button(self.module_selector_frame, text=Module.__name__, cnf=BUTTON_CONFIG, command=lambda Module=Module: self.enable_module(Module))
@@ -43,14 +47,17 @@ class App(Tk):
             self.modules[Module] = Module(self)
             self.modules[Module].grid(row=0, column=1, sticky='nswe')
 
+        self.active_module = self.modules[Home]
         self.enable_module(Home)
 
         self.refresh()
         self.after(REFRESH_RATE, self.update)
 
     def enable_module(self, module):
+        self.module_selectors[type(self.active_module)].configure(bg=INACTIVE_BUTTON_COLOR)
         self.modules[module].tkraise()
         self.active_module = self.modules[module]
+        self.module_selectors[module].configure(bg=ACTIVE_BUTTON_COLOR)
 
     def refresh(self):
         self.active_module.refresh()
@@ -92,8 +99,8 @@ class SensorView(Frame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.mode_selectors = {}
-        self.modes = {}
+        self.mode_selectors = {} # holds buttons at one of SENSOR_VIEW_MODES
+        self.modes = {} # holds instances of SENSOR_VIEW_MODES
 
         for counter, Mode in enumerate(SENSOR_VIEW_MODES):
             self.mode_selectors[Mode] = Button(self.mode_selector_frame, text=Mode.__name__, cnf=BUTTON_CONFIG, command=lambda Mode=Mode: self.enable_mode(Mode))
@@ -104,11 +111,14 @@ class SensorView(Frame):
             self.modes[Mode] = Mode(self)
             self.modes[Mode].grid(row=1, column=0, sticky='nswe')
 
+        self.active_mode = self.modes[SENSOR_VIEW_MODES[0]]
         self.enable_mode(SENSOR_VIEW_MODES[0])
 
     def enable_mode(self, mode):
+        self.mode_selectors[type(self.active_mode)].configure(bg=INACTIVE_BUTTON_COLOR)
         self.modes[mode].tkraise()
         self.active_mode = self.modes[mode]
+        self.mode_selectors[mode].configure(bg=ACTIVE_BUTTON_COLOR)
 
     def refresh(self):
         self.active_mode.refresh()
@@ -171,7 +181,62 @@ class SersorViewVisualMode(Frame):
 
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
-MODULES = (Home, MapVisualisation2, SensorView)
+
+
+class CommandModule(Frame):
+    def __init__(self, root):
+        super().__init__(root)
+        self.command_frames = {}
+        self.parameter_frames = {}
+        for counter, command in enumerate(COMMANDS):
+            row, column = counter // 3, counter % 3
+            self.grid_rowconfigure(row, weight=1)
+            self.grid_columnconfigure(column, weight=1)
+
+            # create frame for every command
+            self.command_frames[command] = Frame(self)
+            self.command_frames[command].grid(column=column, row=row, sticky='nswe')
+            self.command_frames[command].grid_rowconfigure(0, weight=1)
+            self.command_frames[command].grid_columnconfigure(0, weight=1)
+
+            command_info = inspect.signature(command)
+            command_has_parameters = bool(command_info.parameters)
+
+            if command_has_parameters:
+                self.parameter_frames[command] = {}
+                for counter, (parameter_name, parameter_info) in enumerate(command_info.parameters.items()):
+                    self.parameter_frames[command][parameter_name] = Frame(self.command_frames[command])
+                    self.parameter_frames[command][parameter_name].grid(column=0, row=counter+1, sticky='nswe')
+                    self.command_frames[command].grid_rowconfigure(counter+1, weight=1)
+
+                    self.parameter_frames[command][parameter_name].grid_rowconfigure(0, weight=1)
+                    self.parameter_frames[command][parameter_name].grid_columnconfigure(0, weight=1)
+                    self.parameter_frames[command][parameter_name].grid_columnconfigure(1, weight=1)
+
+                    Label(self.parameter_frames[command][parameter_name], text=parameter_name).grid(column=0, row=0, sticky='nswe')
+                    Entry(self.parameter_frames[command][parameter_name]).grid(column=1, row=0, sticky='nswe')
+                
+
+            Button(self.command_frames[command], text=command.__name__, command=lambda c=command: c(), cnf=BUTTON_CONFIG).grid(column=0, row=0, sticky="nswe")
+
+    def refresh(self):
+        pass
+
+def say_hello():
+    print("hello")
+
+def say_hello2(value, val):
+    print("hello"*value)
+
+def moiiin_meister2(a, b=3, *args):
+    pass
+
+def moiiin_meister(a, b=3, *args):
+    pass
+
+COMMANDS = [say_hello,say_hello2,moiiin_meister,moiiin_meister2]
+
+MODULES = (Home, MapVisualisation2, SensorView, CommandModule)
 
 if __name__ == '__main__':
     a = App()
