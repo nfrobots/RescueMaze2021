@@ -7,6 +7,8 @@ from tkinter import Tk, Frame, Canvas, Button, Label, Entry
 from pathlib import Path
 import json
 import inspect
+from inspect import Parameter
+
 
 REFRESH_RATE = 500 # milliseconds delay to call refresh functions
 
@@ -188,6 +190,7 @@ class CommandModule(Frame):
         super().__init__(root)
         self.command_frames = {}
         self.parameter_frames = {}
+        self.parameter_entries = {}
         for counter, command in enumerate(COMMANDS):
             row, column = counter // 3, counter % 3
             self.grid_rowconfigure(row, weight=1)
@@ -202,22 +205,47 @@ class CommandModule(Frame):
             command_info = inspect.signature(command)
             command_has_parameters = bool(command_info.parameters)
 
-            if command_has_parameters:
-                self.parameter_frames[command] = {}
-                for counter, (parameter_name, parameter_info) in enumerate(command_info.parameters.items()):
-                    self.parameter_frames[command][parameter_name] = Frame(self.command_frames[command])
-                    self.parameter_frames[command][parameter_name].grid(column=0, row=counter+1, sticky='nswe')
-                    self.command_frames[command].grid_rowconfigure(counter+1, weight=1)
+            
+            self.parameter_frames[command] = {}
+            self.parameter_entries[command] = {}
+            for counter, (parameter_name, parameter_info) in enumerate(command_info.parameters.items()):
+                self.parameter_frames[command][parameter_name] = Frame(self.command_frames[command])
+                self.parameter_frames[command][parameter_name].grid(column=0, row=counter+1, sticky='nswe')
+                self.command_frames[command].grid_rowconfigure(counter+1, weight=1)
 
-                    self.parameter_frames[command][parameter_name].grid_rowconfigure(0, weight=1)
-                    self.parameter_frames[command][parameter_name].grid_columnconfigure(0, weight=1)
-                    self.parameter_frames[command][parameter_name].grid_columnconfigure(1, weight=1)
+                self.parameter_frames[command][parameter_name].grid_rowconfigure(0, weight=1)
+                self.parameter_frames[command][parameter_name].grid_columnconfigure(0, weight=1)
+                self.parameter_frames[command][parameter_name].grid_columnconfigure(1, weight=1)
 
-                    Label(self.parameter_frames[command][parameter_name], text=parameter_name).grid(column=0, row=0, sticky='nswe')
-                    Entry(self.parameter_frames[command][parameter_name]).grid(column=1, row=0, sticky='nswe')
-                
+                Label(self.parameter_frames[command][parameter_name], text=parameter_name).grid(column=0, row=0, sticky='nswe')
+                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name])
+                self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='nswe')
+                self.parameter_entries[command][parameter_name].insert(0, parameter_info.default if parameter_info.default != Parameter.empty else "")
 
-            Button(self.command_frames[command], text=command.__name__, command=lambda c=command: c(), cnf=BUTTON_CONFIG).grid(column=0, row=0, sticky="nswe")
+            Button(self.command_frames[command], text=command.__name__, command=lambda c=command: self.call_command(c), cnf=BUTTON_CONFIG).grid(column=0, row=0, sticky="nswe")
+
+    def call_command(self, command):
+        arg = []
+        error = False
+        for parameter_name, parameter_entry in inspect.signature(command).parameters.items():
+            parameter_entry = self.parameter_entries[command][parameter_name]
+            entered_value = parameter_entry.get()
+            if bool(entered_value):
+                try:
+                    arg.append(eval(entered_value, {}))
+                except NameError:
+                    arg.append(entered_value)
+            else:
+                parameter_entry.configure(bg="#f33")
+                self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
+                error = True
+
+        print(*arg)
+        if error:
+            return
+        else:
+            command(*arg)
+
 
     def refresh(self):
         pass
@@ -228,10 +256,10 @@ def say_hello():
 def say_hello2(value, val):
     print("hello"*value)
 
-def moiiin_meister2(a, b=3, *args):
+def moiiin_meister2(a, b="lol", *args):
     pass
 
-def moiiin_meister(a, b=3, *args):
+def moiiin_meister(a, b=4, *args):
     pass
 
 COMMANDS = [say_hello,say_hello2,moiiin_meister,moiiin_meister2]
