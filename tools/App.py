@@ -3,11 +3,12 @@ try:
 except ImportError:
     from tools import mapDrawer
 
-from tkinter import Tk, Frame, Canvas, Button, Label, Entry
+from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
 import json
 import inspect
 from inspect import Parameter
+import ast
 
 
 REFRESH_RATE = 500 # milliseconds delay to call refresh functions
@@ -220,46 +221,99 @@ class CommandModule(Frame):
                 Label(self.parameter_frames[command][parameter_name], text=parameter_name).grid(column=0, row=0, sticky='nswe')
                 self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name])
                 self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='nswe')
-                self.parameter_entries[command][parameter_name].insert(0, parameter_info.default if parameter_info.default != Parameter.empty else "")
+
+                if parameter_info.default != Parameter.empty:
+                    if parameter_info.kind == Parameter.KEYWORD_ONLY:
+                        self.parameter_entries[command][parameter_name].insert(0, parameter_name + "=")
+                    if type(parameter_info.default) == str:
+                        self.parameter_entries[command][parameter_name].insert(END, '"' + parameter_info.default + '"')
+                    else:
+                        self.parameter_entries[command][parameter_name].insert(END, parameter_info.default)
+
 
             Button(self.command_frames[command], text=command.__name__, command=lambda c=command: self.call_command(c), cnf=BUTTON_CONFIG).grid(column=0, row=0, sticky="nswe")
 
+    def parse_var_parameters(self, args):
+        """creates list or dict of parameters from string arguments
+
+        Args:
+            args (str): args to pass to command_frames
+
+        Returns:
+            list/dict: contains parsed values
+
+        Throws:
+            ValueError: if eval was not successful
+            SyntaxError: if parse was not successful
+        """
+        if not args:
+            return [], {}
+
+        args = 'f({})'.format(args)
+        tree = ast.parse(args)
+        funccall = tree.body[0].value
+
+        return [ast.literal_eval(arg) for arg in funccall.args], {arg.arg: ast.literal_eval(arg.value) for arg in funccall.keywords}
+
     def call_command(self, command):
-        arg = []
+        args = []
+        kwargs = {}
         error = False
-        for parameter_name, parameter_entry in inspect.signature(command).parameters.items():
+        for parameter_name, parameter_info in inspect.signature(command).parameters.items():
             parameter_entry = self.parameter_entries[command][parameter_name]
             entered_value = parameter_entry.get()
-            if bool(entered_value):
-                try:
-                    arg.append(eval(entered_value, {}))
-                except NameError:
-                    arg.append(entered_value)
-            else:
+            if not bool(entered_value) and parameter_info.kind != Parameter.VAR_KEYWORD and parameter_info.kind != Parameter.VAR_POSITIONAL:
                 parameter_entry.configure(bg="#f33")
                 self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
-                error = True
+                error = True # can not break caus not all empty fields would get colored red
+                continue
+            else:
+                if parameter_info.kind == Parameter.POSITIONAL_ONLY or parameter_info.kind == Parameter.POSITIONAL_OR_KEYWORD:
+                    try:
+                        args.append(eval(entered_value, {}))
+                    except (NameError, SyntaxError):
+                        parameter_entry.configure(bg="#f73")
+                        self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
+                        error = True
+                elif parameter_info.kind == Parameter.VAR_POSITIONAL:
+                    try:
+                        [args.append(e) for e in self.parse_var_parameters(entered_value)[0]]
+                    except Exception as e:
+                        print(e)
+                        parameter_entry.configure(bg="#f73")
+                        self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
+                        error = True
+                elif parameter_info.kind == Parameter.KEYWORD_ONLY or parameter_info.kind == Parameter.VAR_KEYWORD:
+                    try:
+                        for key, value in self.parse_var_parameters(entered_value)[1].items():
+                            kwargs[key] = value
+                    except Exception as e:
+                        print(e)
+                        parameter_entry.configure(bg="#f73")
+                        self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
+                        error = True
 
-        print(*arg)
         if error:
             return
-        else:
-            command(*arg)
+
+        print(args,kwargs)
+        command(*args, **kwargs)
 
 
     def refresh(self):
         pass
+    
 
 def say_hello():
     print("hello")
 
-def say_hello2(value, val):
-    print("hello"*value)
+def say_hello2(value, *, val="Non"):
+    print("hello"*value, val)
 
-def moiiin_meister2(a, b="lol", *args):
-    pass
+def moiiin_meister2(a, b="lol", *args, **kwargs):
+    print("moiiin_meister2 called with: ", a, b, args, kwargs)
 
-def moiiin_meister(a, b=4, *args):
+def moiiin_meister(a, /, b=4, *args):
     pass
 
 COMMANDS = [say_hello,say_hello2,moiiin_meister,moiiin_meister2]
