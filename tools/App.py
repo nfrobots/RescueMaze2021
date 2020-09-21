@@ -13,14 +13,36 @@ import ast
 
 REFRESH_RATE = 500 # milliseconds delay to call refresh functions
 
-ACTIVE_BUTTON_COLOR = '#faa'
-INACTIVE_BUTTON_COLOR = '#fff'
+
+BACKGROUND_COLOR = '#555'
+ERROR_COLOR = '#e22'
+
+BUTTON_COLOR_ACTIVE = '#faa'
+BUTTON_COLOR_INACTIVE = '#777'
 
 BUTTON_CONFIG = {
-    'bd': 1,
-    'bg': INACTIVE_BUTTON_COLOR,
-    'activebackground': '#faf'
+    'bg': BUTTON_COLOR_INACTIVE,
+    'activebackground': BUTTON_COLOR_ACTIVE,
+    'highlightthickness': 2,
+    'highlightbackground': '#669',
+    'bd': 0
 }
+
+FRAME_CONFIG = {
+    'bg' : BACKGROUND_COLOR
+}
+
+ENTRY_CONFIG = {
+    'bg': BACKGROUND_COLOR,
+    'bd': 0,
+    'highlightthickness': 0
+}
+
+LABEL_CONFIG = {
+    'bg': BACKGROUND_COLOR
+}
+
+
 
 class App(Tk):
     def __init__(self):
@@ -32,7 +54,7 @@ class App(Tk):
         self.grid_rowconfigure(0, weight=3) # make module frame expand
         self.grid_columnconfigure(1, weight=3)
 
-        self.module_selector_frame = Frame(self)
+        self.module_selector_frame = Frame(self, FRAME_CONFIG)
         self.module_selector_frame.grid(row=0, column=0, sticky='nswe')
 
         self.grid_rowconfigure(0, weight=1) # module selector frame expand
@@ -57,10 +79,10 @@ class App(Tk):
         self.after(REFRESH_RATE, self.update)
 
     def enable_module(self, module):
-        self.module_selectors[type(self.active_module)].configure(bg=INACTIVE_BUTTON_COLOR)
+        self.module_selectors[type(self.active_module)].configure(bg=BUTTON_COLOR_INACTIVE)
         self.modules[module].tkraise()
         self.active_module = self.modules[module]
-        self.module_selectors[module].configure(bg=ACTIVE_BUTTON_COLOR)
+        self.module_selectors[module].configure(bg=BUTTON_COLOR_ACTIVE)
 
     def refresh(self):
         self.active_module.refresh()
@@ -69,8 +91,9 @@ class App(Tk):
 
 class Home(Frame):
     def __init__(self, root):
-        super().__init__(root)
-        self.text = Label(self, text="w: {}; h: {}".format(self.master.winfo_width(), self.master.winfo_height()))
+        super().__init__(root, FRAME_CONFIG)
+        self.text = Label(self, text=\
+            "w: {}; h: {}".format(self.master.winfo_width(), self.master.winfo_height(), LABEL_CONFIG))
         self.text.pack()
 
     def refresh(self):
@@ -79,7 +102,7 @@ class Home(Frame):
 
 class MapVisualisation2(Frame):
     def __init__(self, root):
-        super().__init__(root)
+        super().__init__(root, FRAME_CONFIG)
         canvas = Canvas(self)
         canvas.pack(fill="both", expand=1)
         with open(Path(__file__).parent.parent / "Pi/out/map.json") as f:
@@ -92,12 +115,12 @@ class MapVisualisation2(Frame):
 
 class SensorView(Frame):
     def __init__(self, root):
-        super().__init__(root)
+        super().__init__(root, FRAME_CONFIG)
 
         self.grid_rowconfigure(1, weight=40)
         self.grid_columnconfigure(0, weight=40)
 
-        self.mode_selector_frame = Frame(self)
+        self.mode_selector_frame = Frame(self, FRAME_CONFIG)
         self.mode_selector_frame.grid(row=0, column=0, sticky='nswe')
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -118,10 +141,10 @@ class SensorView(Frame):
         self.enable_mode(SENSOR_VIEW_MODES[0])
 
     def enable_mode(self, mode):
-        self.mode_selectors[type(self.active_mode)].configure(bg=INACTIVE_BUTTON_COLOR)
+        self.mode_selectors[type(self.active_mode)].configure(bg=BUTTON_COLOR_INACTIVE)
         self.modes[mode].tkraise()
         self.active_mode = self.modes[mode]
-        self.mode_selectors[mode].configure(bg=ACTIVE_BUTTON_COLOR)
+        self.mode_selectors[mode].configure(bg=BUTTON_COLOR_ACTIVE)
 
     def refresh(self):
         self.active_mode.refresh()
@@ -149,7 +172,7 @@ N_TILE_HEIGHT = 20
 
 class SersorViewVisualMode(Frame):
     def __init__(self, root):
-        super().__init__(root)
+        super().__init__(root, FRAME_CONFIG)
         self.canvas = Canvas(self)
         self.canvas.grid(row=0, column=0, sticky='nswe')
         self.grid_columnconfigure(0, weight=1)
@@ -188,7 +211,7 @@ SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraph
 
 class CommandModule(Frame):
     def __init__(self, root):
-        super().__init__(root)
+        super().__init__(root, FRAME_CONFIG)
         self.command_frames = {}
         self.parameter_frames = {}
         self.parameter_entries = {}
@@ -198,19 +221,17 @@ class CommandModule(Frame):
             self.grid_columnconfigure(column, weight=1)
 
             # create frame for every command
-            self.command_frames[command] = Frame(self)
+            self.command_frames[command] = Frame(self, FRAME_CONFIG,highlightthickness=1, highlightbackground= '#f00')
             self.command_frames[command].grid(column=column, row=row, sticky='nswe')
             self.command_frames[command].grid_rowconfigure(0, weight=1)
             self.command_frames[command].grid_columnconfigure(0, weight=1)
 
             command_info = inspect.signature(command)
-            command_has_parameters = bool(command_info.parameters)
-
             
             self.parameter_frames[command] = {}
             self.parameter_entries[command] = {}
             for counter, (parameter_name, parameter_info) in enumerate(command_info.parameters.items()):
-                self.parameter_frames[command][parameter_name] = Frame(self.command_frames[command])
+                self.parameter_frames[command][parameter_name] = Frame(self.command_frames[command], FRAME_CONFIG)
                 self.parameter_frames[command][parameter_name].grid(column=0, row=counter+1, sticky='nswe')
                 self.command_frames[command].grid_rowconfigure(counter+1, weight=1)
 
@@ -218,8 +239,8 @@ class CommandModule(Frame):
                 self.parameter_frames[command][parameter_name].grid_columnconfigure(0, weight=1)
                 self.parameter_frames[command][parameter_name].grid_columnconfigure(1, weight=1)
 
-                Label(self.parameter_frames[command][parameter_name], text=parameter_name).grid(column=0, row=0, sticky='nswe')
-                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name])
+                Label(self.parameter_frames[command][parameter_name], LABEL_CONFIG, text=parameter_name).grid(column=0, row=0, sticky='nswe')
+                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name], ENTRY_CONFIG)
                 self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='nswe')
 
                 if parameter_info.default != Parameter.empty:
@@ -259,46 +280,51 @@ class CommandModule(Frame):
         args = []
         kwargs = {}
         error = False
+
+        def error_occured(entry):
+            """indicates error on entry by changeing color for 1 second
+
+            Args:
+                entry (tkinter.Entry): entry to indicate error on
+
+            Returns:
+                bool: always returns True
+            """
+            entry.configure(bg=ERROR_COLOR)
+            self.after(1000, lambda entry=entry: entry.configure(bg=BACKGROUND_COLOR))
+            return True
+
         for parameter_name, parameter_info in inspect.signature(command).parameters.items():
             parameter_entry = self.parameter_entries[command][parameter_name]
             entered_value = parameter_entry.get()
             if not bool(entered_value) and parameter_info.kind != Parameter.VAR_KEYWORD and parameter_info.kind != Parameter.VAR_POSITIONAL:
-                parameter_entry.configure(bg="#f33")
-                self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
-                error = True # can not break caus not all empty fields would get colored red
-                continue
+                error = error_occured(parameter_entry)
+                continue # can not break caus not all empty fields would get colored red
             else:
                 if parameter_info.kind == Parameter.POSITIONAL_ONLY or parameter_info.kind == Parameter.POSITIONAL_OR_KEYWORD:
                     try:
                         args.append(eval(entered_value, {}))
-                    except (NameError, SyntaxError):
-                        parameter_entry.configure(bg="#f73")
-                        self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
-                        error = True
+                    except Exception as e:
+                        print("Error occured:", e)
+                        error = error_occured(parameter_entry)
                 elif parameter_info.kind == Parameter.VAR_POSITIONAL:
                     try:
                         [args.append(e) for e in self.parse_var_parameters(entered_value)[0]]
                     except Exception as e:
-                        print(e)
-                        parameter_entry.configure(bg="#f73")
-                        self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
-                        error = True
+                        print("Error occured:", e)
+                        error = error_occured(parameter_entry)
                 elif parameter_info.kind == Parameter.KEYWORD_ONLY or parameter_info.kind == Parameter.VAR_KEYWORD:
                     try:
                         for key, value in self.parse_var_parameters(entered_value)[1].items():
                             kwargs[key] = value
                     except Exception as e:
-                        print(e)
-                        parameter_entry.configure(bg="#f73")
-                        self.after(1000, lambda p=parameter_entry: p.configure(bg="#fff"))
-                        error = True
+                        print("Error occured:", e)
+                        error = error_occured(parameter_entry)
 
         if error:
             return
 
-        print(args,kwargs)
         command(*args, **kwargs)
-
 
     def refresh(self):
         pass
