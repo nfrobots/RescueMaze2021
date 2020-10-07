@@ -6,7 +6,6 @@
 #include "MPU6050_6Axis_MotionApps20.h"
 
 AnalogSensor irSensors[8] = {
-    AnalogSensor(A6),
     AnalogSensor(A7),
     AnalogSensor(A8),
     AnalogSensor(A9),
@@ -14,9 +13,10 @@ AnalogSensor irSensors[8] = {
     AnalogSensor(A11),
     AnalogSensor(A12),
     AnalogSensor(A13),
+    AnalogSensor(A14)
 };
 
-AnalogSensor longDistanceIRSensor(A14);
+AnalogSensor longDistanceIRSensor(A15);
 
 ColorSensor colorSensor(49, 50, 51, 52, 53);
 
@@ -92,11 +92,6 @@ void loop() {
     {
         irSensors[i].update();
     }
-
-    Serial.print(colorSensor.value.red); Serial.print(" ");
-    Serial.print(colorSensor.value.green); Serial.print(" ");
-    Serial.print(colorSensor.value.blue); Serial.print(" ");
-    Serial.print(colorSensor.value.alpha); Serial.println();
 
     t.transmitt();
     delay(10);
