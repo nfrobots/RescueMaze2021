@@ -66,11 +66,11 @@ TrParser JSON_TR_PARSER_READABLE (
 
 TrParser JSON_TR_PARSER_REDUCED (
     [](const auto& name, const auto& value) {
-        return '\"' + name + "\": " + value + ',';
+        return '\"' + name + "\":" + value + ',';
     },
     Serial,
     [](){ return String("{"); },
-    [](){ return String("\"time\": " + String(millis()) + '}'); }
+    [](){ return String("\"time\":" + String(millis()) + '}'); }
 );
 
 /**
