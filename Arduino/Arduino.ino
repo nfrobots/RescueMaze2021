@@ -18,6 +18,8 @@ AnalogSensor irSensors[8] = {
 
 AnalogSensor longDistanceIRSensor(A15);
 
+AnalogSensor greyScaleSensor(A6);
+
 ColorSensor colorSensor(49, 50, 51, 52, 53);
 
 MPU6050 mpu;
@@ -26,7 +28,7 @@ Quaternion q;
 
 
 Transmitter t(
-    JSON_TR_PARSER_READABLE,
+    JSON_TR_PARSER_REDUCED,
     TrValue("LIR", longDistanceIRSensor.value),
     TrValue("IR0", irSensors[0].value),
     TrValue("IR1", irSensors[1].value),
@@ -42,10 +44,9 @@ Transmitter t(
     TrValue("RED", colorSensor.value.red),
     TrValue("GRE", colorSensor.value.green),
     TrValue("BLU", colorSensor.value.blue),
-    TrValue("ALP", colorSensor.value.alpha)
+    TrValue("ALP", colorSensor.value.alpha),
+    TrValue("GRS", greyScaleSensor.value)
 );
-
-int8_t setupSuccess = 0; // 0 -> sucessful
 
 void setup() {
     Wire.begin();
@@ -72,20 +73,21 @@ void setup() {
     }
     else
     {
-        Serial.print(F("DMP Initialization failed"));
-        setupSuccess = 1;
+        Serial.print(F("[Error] Initia failed\n"));
+        while (true) {};
     }
+
+    Serial.print(F("[OK] Setup succesfull\n"));
 }
 
 void loop() {
-    if (setupSuccess != 0) return;
-
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) // Get the Latest packet
     { 
         mpu.dmpGetQuaternion(&q, fifoBuffer); //write it to the quaternion
     }
 
     longDistanceIRSensor.update();
+    greyScaleSensor.update();
     colorSensor.update();
 
     for(int i = 0; i < 8; i++)
@@ -93,6 +95,13 @@ void loop() {
         irSensors[i].update();
     }
 
-    t.transmitt();
+    if (Serial.available())
+    {
+        char incomeing_byte = Serial.read();
+        if (incomeing_byte == 'd')
+        {
+            t.transmitt();
+        }
+    }
     delay(10);
 }
