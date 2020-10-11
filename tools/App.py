@@ -1,7 +1,4 @@
-try:
-    import mapDrawer
-except ImportError:
-    from tools import mapDrawer
+from tools import mapDrawer, tkUtil
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -11,7 +8,7 @@ from inspect import Parameter
 import ast
 
 
-REFRESH_RATE = 500 # milliseconds delay to call refresh functions
+REFRESH_RATE = 1000 # milliseconds delay to call refresh functions
 
 
 BACKGROUND_COLOR = '#555'
@@ -93,7 +90,7 @@ class Home(Frame):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.text = Label(self, text=\
-            "w: {}; h: {}".format(self.master.winfo_width(), self.master.winfo_height(), LABEL_CONFIG))
+            "w: {}; h: {}".format(self.master.winfo_reqwidth(), self.master.winfo_reqheight()), **LABEL_CONFIG)
         self.text.pack()
 
     def refresh(self):
@@ -166,44 +163,17 @@ class SensorViewGraphMode(Frame):
         pass
 
 
-# should have ratio of about 1.4: eg 28 and 20
-N_TILE_WIDHT = 28
-N_TILE_HEIGHT = 20
-
 class SersorViewVisualMode(Frame):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
-        self.canvas = Canvas(self)
-        self.canvas.grid(row=0, column=0, sticky='nswe')
-        self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        self.width = 0
-        self.height = 0
-        self.grid_tile_size = 0
-        self.pad = 0
-        self.figure_ids = []
+        self.grid_columnconfigure(0, weight=1)
+        self.canvas = tkUtil.ResizingCanvas(self, bg="#f00")
+        self.canvas.grid(column=0, row=0, sticky='nswe')
+        self.canvas.create_line(10,10,200,200)
 
     def refresh(self):
-        self.canvas.delete(*self.figure_ids) # only delete necessary parts, to imporve test performance
-        self.figure_ids = []
-        new_width, new_height = self.canvas.winfo_width(), self.canvas.winfo_height()
-        if new_width != self.width or new_height != self.height:
-            self.canvas.delete("all")
-
-            self.pad = int(min(new_width, new_height) / 100)
-            self.grid_tile_size = int(min((new_height - (2 * self.pad)) / N_TILE_HEIGHT, (new_width - (2 * self.pad)) / N_TILE_WIDHT))
-            self.width = new_width
-            self.height = new_height
-            
-            for i in range(N_TILE_WIDHT):
-                for j in range(N_TILE_HEIGHT):
-                    self.canvas.create_rectangle(self.coord_helper(i, j, i + 1, j + 1), outline="#aaa")
-
-        figure_id = self.canvas.create_rectangle(self.coord_helper(1, 2, 2, 8), fill="#555")
-        self.figure_ids.append(figure_id)
-
-    def coord_helper(self, *args):
-        return [arg * self.grid_tile_size + self.pad for arg in args]
+        self.canvas.refresh()
 
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
@@ -339,7 +309,7 @@ def say_hello2(value, *, val="Non"):
 def moiiin_meister2(a, b="lol", *args, **kwargs):
     print("moiiin_meister2 called with: ", a, b, args, kwargs)
 
-def moiiin_meister(a, /, b=4, *args):
+def moiiin_meister(a, b=4, *args):
     pass
 
 COMMANDS = [say_hello,say_hello2,moiiin_meister,moiiin_meister2]
