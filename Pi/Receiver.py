@@ -2,17 +2,22 @@ import serial
 import time
 import json
 
+print("[INFO] INITIALIZING SERIAL RECEIVER")
+
 REQUEST_BYTE = 'd'.encode('utf-8')
 
 serial_connection = serial.Serial('/dev/ttyACM0', 9600, timeout=0.2)
 time.sleep(2)
 setup_info = serial_connection.read(1024).decode("utf-8")
+
 if "[ERROR]" in setup_info:
     print("SHIIT BRUH")
     exit()
 
-def request_data_string():
-    """Requests data from arduino and returns it as a string or None if error occured"""
+print(f"[OK] SERIAL CONNECTION ESTABLISHED WITH {setup_info}")
+
+def request_data_bytes():
+    """Requests data from arduino and returns it as a bytes or None if error occured"""
     serial_connection.write(REQUEST_BYTE)
     data = b''
     incomeing_char = serial_connection.read()
@@ -25,14 +30,14 @@ def request_data_string():
         incomeing_char = serial_connection.read()
 
     try:
-        return data.decode('utf-8') + '}'
+        return data + b'}'
     except UnicodeDecodeError:
         print("error occured while decodeing unicode character received from arduino")
         return None
 
 def get_data():
     """Requests data from Arduino and returns it as python dict. Returns None if error occured"""
-    data_string = request_data_string()
+    data_string = request_data_bytes().decode('utf-8')
     if not data_string: # error occured in request_data_string()
         return None
     try:
@@ -40,7 +45,6 @@ def get_data():
         return data_json
     except json.decoder.JSONDecodeError:
         print("error occured while decoding json string")
-
 
 
 if __name__ == "__main__":

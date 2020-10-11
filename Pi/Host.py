@@ -1,3 +1,6 @@
+import Receiver
+
+import time
 import socket
 
 # HOST = '10.42.0.21'
@@ -9,6 +12,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.settimeout(5)
     s.bind((HOST, PORT))
     s.listen()
+    print(f"[INFO] listening to port {PORT} on {HOST}")
     try:
         conn, addr = s.accept()
     except socket.timeout:
@@ -16,6 +20,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         exit()
         
     with conn:
-        conn.recv(1024)
+        while True:
+            conn.sendall(Receiver.request_data_bytes())
+            time.sleep(1)
 
 print("closed")
