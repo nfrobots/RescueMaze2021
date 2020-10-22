@@ -9,8 +9,9 @@ namespace asl {
     class _Tuple_elem
     {
     public:
-        _Tuple_elem(const T& value) : value(value) {}
+        _Tuple_elem(const T& value) : value{value} {}
         T& get() { return value; }
+        const T& get() const { return value; }
     private:
         T value;
     };
@@ -44,7 +45,7 @@ namespace asl {
     };
 
     template<asl::size_t Index, typename ... Ts>
-    auto& get(Tuple<Ts...>& tuple)
+    auto& get(const Tuple<Ts...>& tuple)
     {
         return tuple._Tuple_elem<Index, typename _Get_type<Index, Ts...>::type>::get();
     }
@@ -61,6 +62,18 @@ namespace asl {
     template<asl::size_t Index = 0, typename C, typename ... Ts>
     typename enable_if<Index < sizeof...(Ts), void>::type 
         apply(const C& callable, Tuple<Ts...>& tuple)
+    {
+        callable.operator()(get<Index>(tuple));
+        apply<Index + 1, C, Ts...>(callable, tuple);
+    }
+
+
+    template<asl::size_t Index = 0, typename C, typename ... Ts>
+    typename enable_if<Index >= sizeof...(Ts), void>::type apply(const C&, const Tuple<Ts...>&) {} //base case
+
+    template<asl::size_t Index = 0, typename C, typename ... Ts>
+    typename enable_if<Index < sizeof...(Ts), void>::type 
+        apply(const C& callable, const Tuple<Ts...>& tuple)
     {
         callable.operator()(get<Index>(tuple));
         apply<Index + 1, C, Ts...>(callable, tuple);
