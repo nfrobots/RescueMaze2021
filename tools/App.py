@@ -1,4 +1,4 @@
-from tools import mapDrawer, tkUtil
+from tools import mapDrawer
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -7,6 +7,9 @@ import inspect
 from inspect import Parameter
 import ast
 
+
+W_WIDTH = 1920
+W_HEIGHT = 1080
 
 REFRESH_RATE = 1000 # milliseconds delay to call refresh functions
 
@@ -45,7 +48,7 @@ class App(Tk):
     def __init__(self):
         super().__init__()
 
-        self.geometry("1920x1080")
+        self.geometry(f"{W_WIDTH}x{W_HEIGHT}")
         self.update_idletasks()
         self.title("Roboti App")
         self.grid_rowconfigure(0, weight=3) # make module frame expand
@@ -168,13 +171,25 @@ class SersorViewVisualMode(Frame):
         super().__init__(root, FRAME_CONFIG)
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        self.canvas = tkUtil.ResizingCanvas(self, bg="#f00")
+        self.canvas = Canvas(self, bg=BACKGROUND_COLOR, highlightthickness=0)
         self.canvas.grid(column=0, row=0, sticky='nswe')
-        self.canvas.create_line(10,10,200,200)
+        self.t_height = (W_HEIGHT - 100) // len(SENSOR_DATA_FUNCTION())
 
     def refresh(self):
-        self.canvas.refresh()
+        self.canvas.delete("all")
+        for counter, (key, value) in enumerate(SENSOR_DATA_FUNCTION().items()):
+            self.canvas.create_text(30, counter*self.t_height + 50, text=key)
+            self.canvas.create_rectangle(80, counter*self.t_height + 20, 80 + value, counter*self.t_height + 80)
 
+SENSOR_DATA_FUNCTION = lambda: {
+    "IR0": 400,
+    "IR1": 800,
+    "IR2": 800,
+    "IR3": 800,
+    "IR4": 800,
+    "IR5": 800,
+    "IR6": 15
+}
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
@@ -191,7 +206,7 @@ class CommandModule(Frame):
             self.grid_columnconfigure(column, weight=1)
 
             # create frame for every command
-            self.command_frames[command] = Frame(self, FRAME_CONFIG,highlightthickness=1, highlightbackground= '#f00')
+            self.command_frames[command] = Frame(self, FRAME_CONFIG, highlightthickness=1, highlightbackground='#444')
             self.command_frames[command].grid(column=column, row=row, sticky='nswe')
             self.command_frames[command].grid_rowconfigure(0, weight=1)
             self.command_frames[command].grid_columnconfigure(0, weight=1)
@@ -298,7 +313,8 @@ class CommandModule(Frame):
 
     def refresh(self):
         pass
-    
+
+COMMANDS = []
 
 def say_hello():
     print("hello")
@@ -312,10 +328,13 @@ def moiiin_meister2(a, b="lol", *args, **kwargs):
 def moiiin_meister(a, b=4, *args):
     pass
 
-COMMANDS = [say_hello,say_hello2,moiiin_meister,moiiin_meister2]
 
 MODULES = (Home, MapVisualisation2, SensorView, CommandModule)
 
 if __name__ == '__main__':
+    COMMANDS.append(say_hello)
+    COMMANDS.append(say_hello2)
+    COMMANDS.append(moiiin_meister2)
+
     a = App()
     a.mainloop()
