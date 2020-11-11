@@ -56,16 +56,14 @@ mapDrawer.drawMap(m._store(), cv)
 index = 0
 def step():
     global index
-    while instructions[index] != "STEP":
-        instruction = instructions[index]
-        if instruction == "":
-            return
-        print(instruction)
-        fmtInstruction = instruction.split(";")
-        function = fmtInstruction[0]
-        args = [convertArgs(a) for a in fmtInstruction[1].replace(")", "").split(", ")[1::]]
-        getattr(m, function)(*args)
-        index += 1
+    instruction = instructions[index]
+    if instruction == "":
+        return
+    print(instruction)
+    fmtInstruction = instruction.split(";")
+    function = fmtInstruction[0]
+    args = [convertArgs(a) for a in fmtInstruction[1].replace(")", "").split(", ")[1::]]
+    getattr(m, function)(*args)
     index += 1
     mapDrawer.drawMap(m._store(), cv)
 

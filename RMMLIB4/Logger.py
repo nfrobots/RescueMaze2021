@@ -5,10 +5,6 @@ def clear():
     with open(PATH, "w"):
         pass
 
-def step():
-    with open(PATH, "a+") as f:
-        f.write("STEP\n")
-
 def iLog(func):
     def wrapper(*args, **kwargs):
         if ACTIVE:
