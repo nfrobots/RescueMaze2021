@@ -178,6 +178,10 @@ class Map:
         else:
             return False
 
+    def setAttributeAtRobot(self, attribute, value):
+        robotPosition = self.getRobotPosition()
+        self.setAttribute(robotPosition.x, robotPosition.y, attribute, value)
+
     def _expand(self, direction):
         """Expands map in specified direction
 
@@ -308,7 +312,8 @@ class Map:
         Args:
             relDirection (Constants.RelDirection): relative direction to drive to
         """
-        self.rotateRobot(relDirection)
+        if relDirection != Constants.RelDirection.FORWARD:
+            self.rotateRobot(relDirection)
         self.move()
 
         
