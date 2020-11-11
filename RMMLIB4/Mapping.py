@@ -340,7 +340,7 @@ class Map:
         Args:
             path (str): path to json file
         """
-        with open(path, 'w') as f:
+        with open(path, 'w+') as f:
             json.dump(self._store(), f)
 
     def saves(self):
