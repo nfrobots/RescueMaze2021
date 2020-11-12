@@ -5,6 +5,33 @@
 #include <Wire.h>
 #include "MPU6050_6Axis_MotionApps20.h"
 
+volatile unsigned long UsLeftValue = 0;
+volatile unsigned long UsLeftPrevTime = 0;
+volatile unsigned long UsRightValue = 0;
+volatile unsigned long UsRightPrevTime = 0;
+
+void UsLeftRising()
+{
+    UsLeftValue = micros() - UsLeftPrevTime;
+}
+
+void UsLeftFalling()
+{
+    UsLeftPrevTime = micros();
+    attatchInterrupt(digitalPinToInterrupt(19), UsRightRising, RISING);
+}
+
+void UsRightRising()
+{
+    UsRightValue = micros() - UsRightPrevTime;
+}
+
+void UsRightFalling()
+{
+    UsRightPrevTime = micros();
+    attatchInterrupt(digitalPinToInterrupt(18), UsRightRising, RISING);
+}
+
 AnalogSensor irSensors[8] = {
     AnalogSensor(A7),
     AnalogSensor(A8),
@@ -53,6 +80,9 @@ void setup() {
     Wire.setClock(400000);
 
     Serial.begin(9600);
+
+    attatchInterrupt(digitalPinToInterrupt(18), UsRightFalling, FALLING);
+    attatchInterrupt(digitalPinToInterrupt(19), UsLeftFalling, FALLING);
 
     mpu.initialize();
     int status = mpu.dmpInitialize();
