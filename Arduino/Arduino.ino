@@ -13,23 +13,25 @@ volatile unsigned long UsRightPrevTime = 0;
 void UsLeftRising()
 {
     UsLeftValue = micros() - UsLeftPrevTime;
+    attachInterrupt(digitalPinToInterrupt(19), UsLeftFalling, FALLING);
 }
 
 void UsLeftFalling()
 {
     UsLeftPrevTime = micros();
-    attatchInterrupt(digitalPinToInterrupt(19), UsRightRising, RISING);
+    attachInterrupt(digitalPinToInterrupt(19), UsLeftRising, RISING);
 }
 
 void UsRightRising()
 {
     UsRightValue = micros() - UsRightPrevTime;
+    attachInterrupt(digitalPinToInterrupt(18), UsRightFalling, FALLING);
 }
 
 void UsRightFalling()
 {
     UsRightPrevTime = micros();
-    attatchInterrupt(digitalPinToInterrupt(18), UsRightRising, RISING);
+    attachInterrupt(digitalPinToInterrupt(18), UsRightRising, RISING);
 }
 
 AnalogSensor irSensors[8] = {
@@ -72,17 +74,21 @@ Transmitter t(
     TrValue("GRE", colorSensor.value.green),
     TrValue("BLU", colorSensor.value.blue),
     TrValue("ALP", colorSensor.value.alpha),
-    TrValue("GRS", greyScaleSensor.value)
+    TrValue("GRS", greyScaleSensor.value),
+    TrValue("USL", UsLeftValue),
+    TrValue("USR", UsRightValue)
 );
 
 void setup() {
+    pinMode(42, OUTPUT);
+    pinMode(41, OUTPUT);
     Wire.begin();
     Wire.setClock(400000);
 
     Serial.begin(9600);
 
-    attatchInterrupt(digitalPinToInterrupt(18), UsRightFalling, FALLING);
-    attatchInterrupt(digitalPinToInterrupt(19), UsLeftFalling, FALLING);
+    attachInterrupt(digitalPinToInterrupt(19), UsLeftFalling, FALLING);
+    attachInterrupt(digitalPinToInterrupt(18), UsRightFalling, FALLING);
 
     mpu.initialize();
     int status = mpu.dmpInitialize();
@@ -133,5 +139,5 @@ void loop() {
             t.transmitt();
         }
     }
-    delay(10);
+    delay(1);
 }
