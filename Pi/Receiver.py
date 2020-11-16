@@ -7,14 +7,18 @@ print("[INFO] INITIALIZING SERIAL RECEIVER")
 REQUEST_BYTE = 'd'.encode('utf-8')
 
 serial_connection = serial.Serial('/dev/ttyACM0', 9600, timeout=0.2)
-time.sleep(2)
+
+while serial_connection.in_waiting == 0:
+    print("[INFO] WAITING FOR ARDUINO TO FINISH INITIALIZATION AND ESTABLISH SERIAL CONNETION")
+    time.sleep(0.5)
+
 setup_info = serial_connection.read(1024).decode("utf-8")
 
 if "[ERROR]" in setup_info:
     print("SHIIT BRUH")
     exit()
 
-print(f"[OK] SERIAL CONNECTION ESTABLISHED WITH {setup_info}")
+print(f"[OK] SERIAL CONNECTION ESTABLISHED WITH: {setup_info}")
 
 def request_data_bytes():
     """Requests data from arduino and returns it as a bytes or None if error occured"""
