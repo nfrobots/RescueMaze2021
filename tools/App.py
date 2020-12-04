@@ -1,4 +1,5 @@
-from tools import mapDrawer
+import mapDrawer
+import Client
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -43,7 +44,6 @@ LABEL_CONFIG = {
 }
 
 
-
 class App(Tk):
     def __init__(self):
         super().__init__()
@@ -51,6 +51,9 @@ class App(Tk):
         self.geometry(f"{W_WIDTH}x{W_HEIGHT}")
         self.update_idletasks()
         self.title("Roboti App")
+
+        self.protocol("WM_DELETE_WINDOW", self.on_window_close)
+
         self.grid_rowconfigure(0, weight=3) # make module frame expand
         self.grid_columnconfigure(1, weight=3)
 
@@ -87,6 +90,10 @@ class App(Tk):
     def refresh(self):
         self.active_module.refresh()
         self.after(REFRESH_RATE, self.refresh)
+
+    def on_window_close(self):
+        Client.close_connection()
+        self.destroy()
 
 
 class Home(Frame):
@@ -181,15 +188,7 @@ class SersorViewVisualMode(Frame):
             self.canvas.create_text(30, counter*self.t_height + 50, text=key)
             self.canvas.create_rectangle(80, counter*self.t_height + 20, 80 + value, counter*self.t_height + 80)
 
-SENSOR_DATA_FUNCTION = lambda: {
-    "IR0": 400,
-    "IR1": 800,
-    "IR2": 800,
-    "IR3": 800,
-    "IR4": 800,
-    "IR5": 800,
-    "IR6": 15
-}
+SENSOR_DATA_FUNCTION = Client.request_data
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
