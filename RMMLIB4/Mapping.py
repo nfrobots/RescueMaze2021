@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 from RMMLIB4 import Constants, Logger
-from RMMLIB4.Constants import Direction # needed for eval() call
+from RMMLIB4.Constants import * # needed for eval() call
 
 class Position:
     """Position in 2 dimensional space"""
@@ -156,6 +156,9 @@ class Map:
         """
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
             return self.map[y, x]
+
+    def getAtRobot(self):
+        return self.get(self.robot.x, self.robot.y)
 
     def set(self, x, y, value):
         """Sets MazeTile at specified position
@@ -363,7 +366,7 @@ class Map:
         with open(path, 'r') as f:
             raw_data = json.load(f)
 
-        newMap = Map(sizeX=raw_data['sizeX'], sizeY=raw_data['sizeY'], initialize=False)
+        newMap = Map(sizeX=raw_data['sizeX'], sizeY=raw_data['sizeY'])
         newMap.sizeX = raw_data['sizeX']
         newMap.sizeY = raw_data['sizeY']
         newMap.robot.x = raw_data['robotX']
@@ -371,7 +374,9 @@ class Map:
         newMap.robot.direction = eval(raw_data['robotDirection'])
         for y in range(newMap.sizeY):
             for x in range(newMap.sizeX):
-                newMap.map[y, x] = eval(str(raw_data["Map"][str(x) + ',' + str(y)]))
+                for key, value in raw_data["Map"][f"{x},{y}"].items():
+                    #TODO FILL IN THIS STUFF
+                    newMap.map[y, x]._data[eval(key)] = value
 
         return newMap
 
