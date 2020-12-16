@@ -1,0 +1,16 @@
+{
+    "VICTIM_COLOR": {
+        "red": 17,
+        "green": 70,
+        "blue": 61,
+        "alpha": 11
+    },
+    "WHITE_COLOR": {
+        "red": 12,
+        "green": 13,
+        "blue": 11,
+        "alpha": 4
+    },
+    "BLACK_GREYSCALE": 1450,
+    "WHITE_GREYSCALE": 550
+}

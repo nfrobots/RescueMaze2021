@@ -3,6 +3,7 @@ import json
 import numpy as np
 
 from RMMLIB4 import Constants, Logger
+from RMMLIB4.Constants import * # needed for eval() call
 
 class Position:
     """Position in 2 dimensional space"""
@@ -77,14 +78,13 @@ MAZE_TILE_TEMPLATE =  {
 class MazeTile:
     """Represents tile in maze"""
 
-    def __init__(self, template = MAZE_TILE_TEMPLATE, _cpy = copy.copy):
+    def __init__(self, template = MAZE_TILE_TEMPLATE):
         """Initializes MazeTile
 
         Args:
             template (dict, optional): dict containing attributes of MazeTile. Defaults to MAZE_TILE_TEMPLATE.
-            _cpy (function, optional): function used to copy template. Defaults to copy.deepcopy.
         """
-        self._data = _cpy(template)
+        self._data = template.copy()
 
     def __getitem__(self, key):
         """Gets attribute from MazeTile
@@ -133,11 +133,15 @@ class MazeTile:
 
 class Map:
     """Map consisting of MazeTiles and a robot"""
-    def __init__(self, tile = MazeTile()):
-        self.map = np.zeros((1,1), MazeTile)
-        self.map[0, 0] = MazeTile()
-        self.sizeX = 1
-        self.sizeY = 1
+    def __init__(self, tile = MazeTile, sizeX=1, sizeY=1, initialize=True):
+        self.map = np.zeros((sizeY,sizeX), MazeTile)
+        self.sizeX = sizeX
+        self.sizeY = sizeY
+        if initialize:
+            for x in range(sizeX):
+                for y in range(sizeY):
+                    self.map[y,x] = tile()
+
         self.robot = _Vctr(0, 0, Constants.Direction.NORTH)
 
     def get(self, x, y):
@@ -152,6 +156,9 @@ class Map:
         """
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
             return self.map[y, x]
+
+    def getAtRobot(self):
+        return self.get(self.robot.x, self.robot.y)
 
     def set(self, x, y, value):
         """Sets MazeTile at specified position
@@ -193,6 +200,13 @@ class Map:
         """
         if not isinstance(direction, Constants.Direction):
             raise TypeError("given argument is not of type Constants.RelDirection")
+
+        # prevent possibly unbount warning
+        newMap = None
+        yOffset = None
+        xOffset = None
+        newSizeX = None
+        newSizeY = None
 
         if direction == Constants.Direction.NORTH:
             newMap = np.zeros((self.sizeY + 1, self.sizeX), MazeTile)
@@ -346,6 +360,25 @@ class Map:
     def saves(self):
         """Returns json string containing map information."""
         return json.dumps(self._store())
+
+    @staticmethod
+    def open(path):
+        with open(path, 'r') as f:
+            raw_data = json.load(f)
+
+        newMap = Map(sizeX=raw_data['sizeX'], sizeY=raw_data['sizeY'])
+        newMap.sizeX = raw_data['sizeX']
+        newMap.sizeY = raw_data['sizeY']
+        newMap.robot.x = raw_data['robotX']
+        newMap.robot.y = raw_data['robotY']
+        newMap.robot.direction = eval(raw_data['robotDirection'])
+        for y in range(newMap.sizeY):
+            for x in range(newMap.sizeX):
+                for key, value in raw_data["Map"][f"{x},{y}"].items():
+                    #TODO FILL IN THIS STUFF
+                    newMap.map[y, x]._data[eval(key)] = value
+
+        return newMap
 
     def findPath(self, startX, startY, endX, endY):
         class _ANode:
