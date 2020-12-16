@@ -14,6 +14,12 @@ def request_data():
     data_bytes = connection.recv(1024)
     return json.loads(data_bytes.decode('utf-8'))
 
+def request_calibration(value_string):
+    connection.send(b'c' + value_string.encode("utf-8"))
+
+def request_led_color(r, g, b):
+    connection.send("l{} {} {}".format(r, g, b).encode("utf-8"))
+
 def close_connection():
     print("rofl")
     connection.send(b'q')

@@ -9,8 +9,8 @@ from inspect import Parameter
 import ast
 
 
-W_WIDTH = 1920
-W_HEIGHT = 1080
+W_WIDTH = 1280
+W_HEIGHT = 720
 
 REFRESH_RATE = 1000 # milliseconds delay to call refresh functions
 
@@ -74,6 +74,9 @@ class App(Tk):
 
             self.modules[Module] = Module(self)
             self.modules[Module].grid(row=0, column=1, sticky='nswe')
+
+        self.module_selectors["QUIT_BUTTON"] = Button(self.module_selector_frame, text="QUIT", cnf=BUTTON_CONFIG, command=self.on_window_close)
+        self.module_selectors["QUIT_BUTTON"].grid(row=counter+1, column=0, sticky="nswe")
 
         self.active_module = self.modules[Home]
         self.enable_module(Home)
@@ -184,14 +187,41 @@ class SersorViewVisualMode(Frame):
 
     def refresh(self):
         self.canvas.delete("all")
-        for counter, (key, value) in enumerate(SENSOR_DATA_FUNCTION().items()):
-            self.canvas.create_text(30, counter*self.t_height + 50, text=key)
-            self.canvas.create_rectangle(80, counter*self.t_height + 20, 80 + value, counter*self.t_height + 80)
+        data = SENSOR_DATA_FUNCTION()
+        data_iterable = data.items()
+        for counter, (key, value) in enumerate(data_iterable):
+            value = round(value, 5)
+            self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
+            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value*500, counter*self.t_height + 60, fill="#000")
 
-SENSOR_DATA_FUNCTION = Client.request_data
+SENSOR_DATA_FUNCTION =  Client.request_data
+#SENSOR_DATA_FUNCTION = lambda: {"test": 1}
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
+
+class CalibrationModule(Frame):
+    def __init__(self, root):
+        super().__init__(root, FRAME_CONFIG)
+        Button(self, text="calibrate victim", command=lambda: Client.request_calibration("VICTIM_COLOR")).pack()
+        Button(self, text="calibrate white", command=lambda: Client.request_calibration("WHITE_COLOR")).pack()
+
+    def refresh(self):
+        pass
+
+class LedModule(Frame):
+    def __init__(self, root):
+        super().__init__(root, FRAME_CONFIG)
+        r = Entry(self)
+        r.pack()
+        g = Entry(self)
+        g.pack()
+        b = Entry(self)
+        b.pack()
+        Button(self, text="send", command=lambda: Client.request_led_color(r.get(), g.get(), b.get())).pack()
+
+    def refresh(self):
+        pass
 
 class CommandModule(Frame):
     def __init__(self, root):
@@ -328,7 +358,7 @@ def moiiin_meister(a, b=4, *args):
     pass
 
 
-MODULES = (Home, MapVisualisation2, SensorView, CommandModule)
+MODULES = (Home, MapVisualisation2, SensorView, CalibrationModule, LedModule, CommandModule)
 
 if __name__ == '__main__':
     COMMANDS.append(say_hello)
