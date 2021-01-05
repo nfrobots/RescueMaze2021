@@ -1,6 +1,8 @@
 import copy
 import json
 import numpy as np
+from enum import Enum
+from queue import Queue
 
 from RMMLIB4 import Constants, Logger
 from RMMLIB4.Constants import * # needed for eval() call
@@ -131,18 +133,28 @@ class MazeTile:
         return "<MazeTile with attributes:\n\t" + "\n\t".join("{}: {}".format(key, self._data[key]) for key in self._data) + ">"
 
 
+class SearchFilterAttribute(Enum):
+    ANY = "ANY"
+
+def create_any_tile():
+    return MazeTile({key: SearchFilterAttribute.ANY for key in MAZE_TILE_TEMPLATE})
+
 class Map:
     """Map consisting of MazeTiles and a robot"""
-    def __init__(self, tile = MazeTile, sizeX=1, sizeY=1, initialize=True):
+    def __init__(self, tile=MazeTile, sizeX=1, sizeY=1, logging=False, initialize=True, neighbours=False):
         self.map = np.zeros((sizeY,sizeX), MazeTile)
         self.sizeX = sizeX
         self.sizeY = sizeY
+        self.offsetX = 0
+        self.offsetY = 0
         if initialize:
             for x in range(sizeX):
                 for y in range(sizeY):
                     self.map[y,x] = tile()
 
         self.robot = _Vctr(0, 0, Constants.Direction.NORTH)
+        self.logging = logging
+        self.apply_to_neighbours = neighbours
 
     def get(self, x, y):
         """Gets MazeTile at specified position
@@ -160,40 +172,81 @@ class Map:
     def getAtRobot(self):
         return self.get(self.robot.x, self.robot.y)
 
-    def set(self, x, y, value):
-        """Sets MazeTile at specified position
+    def getAtAbsoloute(self, x, y):
+        """gets tile at absoloute position (0,0 is the start position -> x and y can be negative)"""
+        return self.get(x + self.offsetX, y + self.offsetY)
+
+    def set(self, x, y, value, expand=True):
+        """[[NOT LOGGED]] Sets MazeTile at specified position, may expands until position reached. Does not set neighbours
 
         Args:
             x (int): x coordinate
             y (int): y coordinate
             value (MazeTile): MazeTile to set at specified posiotion
-
-        Returns:
-            bool: True if successfull, otherwise False
+            expand (bool): weather to expand
         """
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
             self.map[y, x] = value
             return True
-        else:
-            return False
+        elif expand:
+            if x >= self.sizeX:
+                self._expand(Constants.Direction.EAST, x - self.sizeX + 1)
+                self.set(x, y, value)
+            elif x < 0:
+                self._expand(Constants.Direction.WEST, -x)
+                self.set(x+1, y, value)
+            elif y >= self.sizeY:
+                self._expand(Constants.Direction.SOUTH, y - self.sizeY + 1)
+                self.set(x, y, value)
+            elif y < 0:
+                self._expand(Constants.Direction.NORTH, -y)
+                self.set(x, y+1, value)
+
+
+    def setAtRobot(self, tile: MazeTile):
+        current = self.get(self.robot.x, self.robot.y)
+        for attribute in tile._data:
+            if tile[attribute] != current[attribute]:
+                self.setAttributeAtRobot(attribute, tile[attribute])
 
     @Logger.iLog
-    def setAttribute(self, x, y, attribute, value):
-        if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
-            self.map[y, x][attribute] = value
-            return True
-        else:
-            return False
+    def setAttribute(self, x, y, attribute, value, expand=True, _neighbours=None, _xpnd_ngb=False):
+        """[[ONLY LOGGED SETTER]] Sets attribute of tile at specified posiotion. Sets neighbours if self.apply_to_neighbours is True
+
+        Args:
+            x (int): x position
+            y (int): y position
+            attribute (Any): [description]
+            value (Any): [description]
+            expand (bool): weather to expand
+        """
+        tile = self.get(x, y)
+        if tile == None:
+            tile = MazeTile()
+        tile[attribute] = value
+        self.set(x, y, tile, expand)
+        if isinstance(attribute, Constants.Direction) and self.apply_to_neighbours and _neighbours == None:
+            self.setNeighbourWall(x, y, attribute, value, _xpnd_ngb)
+
+    def setNeighbourWall(self, x, y, direction, value, expand=False):
+        offset = self.directionToOffset(direction)
+        self.setAttribute(x + offset[0], y + offset[1], self.inverseDirection(direction), value, expand=expand, _neighbours=False)
 
     def setAttributeAtRobot(self, attribute, value):
         robotPosition = self.getRobotPosition()
         self.setAttribute(robotPosition.x, robotPosition.y, attribute, value)
+        
+    def setAttributeAtRobotOffset(self, relDirection, attribute, value, expand=True):
+        robotPosition = self.getRobotPosition()
+        offset = self.relDirectionToOffset(relDirection)
+        self.setAttribute(robotPosition.x + offset[0], robotPosition.y + offset[1], attribute, value, expand)
 
-    def _expand(self, direction):
+    def _expand(self, direction, n=1):
         """Expands map in specified direction
 
         Args:
             direction (Constants.Direction): direction in which to expand the map
+            n (int): number of tiles to expand
 
         Raises:
             TypeError: if direction is not of type Constants.Direction
@@ -203,43 +256,33 @@ class Map:
 
         # prevent possibly unbount warning
         newMap = None
-        yOffset = None
-        xOffset = None
-        newSizeX = None
-        newSizeY = None
+        yOffset = 0
+        xOffset = 0
+        newSizeX = self.sizeX
+        newSizeY = self.sizeY
 
         if direction == Constants.Direction.NORTH:
-            newMap = np.zeros((self.sizeY + 1, self.sizeX), MazeTile)
+            newSizeY += n
+            newMap = np.zeros((newSizeY, newSizeX), MazeTile)
             for x in range(self.sizeX):
                 newMap[0, x] = MazeTile()
-            newSizeX = self.sizeX
-            newSizeY = self.sizeY + 1
-            xOffset = 0
             yOffset = 1
         elif direction == Constants.Direction.SOUTH:
-            newMap = np.zeros((self.sizeY + 1, self.sizeX), MazeTile)
+            newSizeY += n
+            newMap = np.zeros((newSizeY, newSizeX), MazeTile)
             for x in range(self.sizeX):
                 newMap[self.sizeY, x] = MazeTile()
-            newSizeX = self.sizeX
-            newSizeY = self.sizeY + 1
-            xOffset = 0
-            yOffset = 0
         elif direction == Constants.Direction.WEST:
-            newMap = np.zeros((self.sizeY, self.sizeX + 1), MazeTile)
+            newSizeX += n
+            newMap = np.zeros((newSizeY, newSizeX), MazeTile)
             for y in range(self.sizeY):
                 newMap[y][0] = MazeTile()
-            newSizeX = self.sizeX + 1
-            newSizeY = self.sizeY
             xOffset = 1
-            yOffset = 0
         elif direction == Constants.Direction.EAST:
-            newMap = np.zeros((self.sizeY, self.sizeX + 1), MazeTile)
+            newSizeX += n
+            newMap = np.zeros((newSizeY, newSizeX), MazeTile)
             for y in range(self.sizeY):
                 newMap[y, self.sizeX] = MazeTile()
-            newSizeX = self.sizeX + 1
-            newSizeY = self.sizeY
-            xOffset = 0
-            yOffset = 0
 
         for y in range(self.sizeY):
             for x in range(self.sizeX):
@@ -251,6 +294,9 @@ class Map:
 
         self.robot.x += xOffset
         self.robot.y += yOffset
+
+        self.offsetX += xOffset
+        self.offsetY += yOffset
 
     def relDirectionToDirection(self, relDirection):
         """Converts relative direction to absolute direction from robot perspective
@@ -269,6 +315,23 @@ class Map:
 
         return Constants.Direction((self.robot.direction.value + relDirection.value) % 4)
 
+    def directionToOffset(self, direction):
+        if direction == Constants.Direction.NORTH:
+            return [0, -1]
+        elif direction == Constants.Direction.SOUTH:
+            return [0, 1]
+        elif direction == Constants.Direction.WEST:
+            return [-1, 0]
+        elif direction == Constants.Direction.EAST:
+            return [1, 0]
+
+    def relDirectionToOffset(self, relDirection):
+        """Converts relative direction to x and y offset"""
+        return self.directionToOffset(self.relDirectionToDirection(relDirection))
+
+    def inverseDirection(self, direction):
+        return Direction((direction.value + 2) % 4)
+
     def getRobotPosition(self):
         """Gets robot position
 
@@ -277,6 +340,9 @@ class Map:
         """
         return Position(self.robot.x, self.robot.y)
 
+    def getRobotAbsolutePosition(self):
+        return Position(self.robot.x - self.offsetX, self.robot.y - self.offsetY)
+
     def getRobotDirection(self):
         """Gets robot direction
 
@@ -284,6 +350,10 @@ class Map:
             Constants.Direction: direction of robot
         """
         return self.robot.direction
+
+    def robotIsAtStart(self):
+        absoloutePosition = self.getRobotAbsolutePosition()
+        return absoloutePosition.x == 0 and absoloutePosition.y == 0
 
     @Logger.iLog
     def rotateRobot(self, relDirection):
@@ -365,7 +435,10 @@ class Map:
     def open(path):
         with open(path, 'r') as f:
             raw_data = json.load(f)
+        return Map._restore(raw_data)
 
+    @staticmethod
+    def _restore(raw_data):
         newMap = Map(sizeX=raw_data['sizeX'], sizeY=raw_data['sizeY'])
         newMap.sizeX = raw_data['sizeX']
         newMap.sizeY = raw_data['sizeY']
@@ -377,7 +450,6 @@ class Map:
                 for key, value in raw_data["Map"][f"{x},{y}"].items():
                     #TODO FILL IN THIS STUFF
                     newMap.map[y, x]._data[eval(key)] = value
-
         return newMap
 
     def findPath(self, startX, startY, endX, endY):
@@ -449,3 +521,39 @@ class Map:
 
                 if not alreadyVisited:
                     openList.append(neighbour)
+
+    def search(self, origin: Position, tile: MazeTile):
+        """Searches for MazeTile. Attribute can be set to SearchFilterAttribute.ANY, if it is not supposed to be checked
+
+            Returns:
+                Tuple[MazeTile, int, int]: MazeTile, that matched, x coordinate, y coordinate repectively
+        """
+        check_attributes = [attribute for attribute in tile._data if tile._data[attribute] != SearchFilterAttribute.ANY]
+        queue = Queue() # contains (Tile, x, y)
+        queue.put((self.get(origin.x, origin.y), origin.x, origin.y))
+        checked_tiles = {} # key is (x, y)
+        while True:
+            if queue.qsize() == 0:
+                break
+            qelem = queue.get()
+            tl = qelem[0]
+            print(f"checking {qelem[1]}, {qelem[2]}")
+            matches = True
+            for attribute in check_attributes:
+                if tl[attribute] != tile[attribute]:
+                    matches = False
+                    break
+            if matches:
+                return qelem
+            checked_tiles[qelem[1:]] = True
+            next_directions = [direction for direction in Constants.Direction if not tl[direction]]
+            for direction in next_directions:
+                offset = self.directionToOffset(direction)
+                destination_coords = (qelem[1] + offset[0], qelem[2] + offset[1])
+                if destination_coords in checked_tiles:
+                    continue
+                destination = self.get(*destination_coords)
+                if destination != None and not destination[self.inverseDirection(direction)]:
+                    queue.put((destination, *destination_coords))
+
+
