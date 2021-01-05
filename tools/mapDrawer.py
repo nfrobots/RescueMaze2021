@@ -32,6 +32,13 @@ def load_images(size):
         CACHED_IMAGES_SIZE = size
     return CACHED_IMAGES
 
+def calculate_tile_size(canvas, map):
+    canvas_height = max(canvas.winfo_height(), 100)
+    canvas_width  = max(canvas.winfo_width(), 100)
+
+    tile_size = min((canvas_height - 2*PAD) // map.sizeY, (canvas_width - 2*PAD) // map.sizeX)
+    return tile_size
+
 def draw_map(canvas, map):
     """draw a map on given tk canvas
 
@@ -39,12 +46,9 @@ def draw_map(canvas, map):
         canvas (tkinter.Canvas): canvas to draw the map on
         map (RMMLIB4.Mapping.Map): map to draw
     """
-
     canvas.delete("all")
 
-    canvas_height = canvas.winfo_height()
-    canvas_width  = canvas.winfo_width()
-    tile_size = min((canvas_height - 2*PAD) // map.sizeY, (canvas_width - 2*PAD) // map.sizeX)
+    tile_size = calculate_tile_size(canvas, map)
     D = TILE_DISTANCE // 2
     image_size = tile_size - PAD
 
@@ -82,11 +86,11 @@ if __name__ == "__main__":
     canvas = Canvas(root)
     canvas.grid(row=0, column=0, sticky='nswe')
     root.update()
-    draw_map(canvas, Mapping.Map.open("./Pi/out/map.json"))
-    draw_map(canvas, Mapping.Map.open("./Pi/out/map.json"))
+    map = Mapping.Map.open("./Pi/out/testmap.json")
+    draw_map(canvas, map)
 
     def updater():
-        draw_map(canvas, Mapping.Map.open("./Pi/out/map.json"))
+        draw_map(canvas, map)
         root.after(1000, updater)
 
     root.after(1000, updater)
