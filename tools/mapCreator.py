@@ -62,6 +62,7 @@ class mapCreator(Tk):
         self.canvas.update()
         self._rf()
         self.bind("<Button-1>", self.on_mouse_click)
+        self.bind("<Key>", self.on_keyboard_press)
 
     def apply_properties(self):
         for property in Mapping.MAZE_TILE_TEMPLATE:
@@ -99,6 +100,20 @@ class mapCreator(Tk):
             self.active_y = min(floor((event.y - mapDrawer.PAD) / tile_size), self.map.sizeY - 1)
             print(self.active_x, self.active_y)
             self.load_properties(self.active_x, self.active_y)
+
+    def on_keyboard_press(self, event):
+        var = None
+        if event.char == "8":
+            var = self.checkbutton_values[Constants.Direction.NORTH]
+        elif event.char == "2":
+            var = self.checkbutton_values[Constants.Direction.SOUTH]
+        elif event.char == "4":
+            var = self.checkbutton_values[Constants.Direction.WEST]
+        elif event.char == "6":
+            var = self.checkbutton_values[Constants.Direction.EAST]
+        if var != None:    
+            var.set(not var.get())
+            self.apply_properties()
 
 
 if __name__ == "__main__":
