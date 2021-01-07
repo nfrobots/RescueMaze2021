@@ -3,6 +3,7 @@ import json
 import numpy as np
 from enum import Enum
 from queue import Queue
+import heapq
 
 from RMMLIB4 import Constants, Logger
 from RMMLIB4.Constants import * # needed for eval() call
@@ -176,6 +177,10 @@ class Map:
         """gets tile at absoloute position (0,0 is the start position -> x and y can be negative)"""
         return self.get(x + self.offsetX, y + self.offsetY)
 
+    def getAtOffset(self, x, y, direction):
+        offset = self.directionToOffset(direction)
+        return self.get(x + offset[0], y + offset[1])
+
     def set(self, x, y, value, expand=True):
         """[[NOT LOGGED]] Sets MazeTile at specified position, may expands until position reached. Does not set neighbours
 
@@ -264,25 +269,29 @@ class Map:
         if direction == Constants.Direction.NORTH:
             newSizeY += n
             newMap = np.zeros((newSizeY, newSizeX), MazeTile)
-            for x in range(self.sizeX):
-                newMap[0, x] = MazeTile()
+            for y in range(n):
+                for x in range(self.sizeX):
+                    newMap[y, x] = MazeTile()
             yOffset = 1
         elif direction == Constants.Direction.SOUTH:
             newSizeY += n
             newMap = np.zeros((newSizeY, newSizeX), MazeTile)
-            for x in range(self.sizeX):
-                newMap[self.sizeY, x] = MazeTile()
+            for y in range(n):
+                for x in range(self.sizeX):
+                    newMap[self.sizeY + y, x] = MazeTile()
         elif direction == Constants.Direction.WEST:
             newSizeX += n
             newMap = np.zeros((newSizeY, newSizeX), MazeTile)
-            for y in range(self.sizeY):
-                newMap[y][0] = MazeTile()
+            for x in range(n):
+                for y in range(self.sizeY):
+                    newMap[y, x] = MazeTile()
             xOffset = 1
         elif direction == Constants.Direction.EAST:
             newSizeX += n
             newMap = np.zeros((newSizeY, newSizeX), MazeTile)
-            for y in range(self.sizeY):
-                newMap[y, self.sizeX] = MazeTile()
+            for x in range(n):
+                for y in range(self.sizeY):
+                    newMap[y, self.sizeX + x] = MazeTile()
 
         for y in range(self.sizeY):
             for x in range(self.sizeX):
@@ -400,6 +409,16 @@ class Map:
             self.rotateRobot(relDirection)
         self.move()
 
+    def canDrive(self, x, y, direction):
+        current = self.get(x, y)
+        if current == None or current[direction]:
+            return False
+        offset =  self.directionToOffset(direction)
+        destination = self.get(x + offset[0], y + offset[1])
+        if destination != None and destination[Constants.BLACK]:
+            return False
+        return True
+
         
     def _store(self):
         """Returns map information as python dict."""
@@ -459,68 +478,89 @@ class Map:
                 self.y = y
                 self.parent = parent
                 if parent is not None:
-                    self.gCost = parent.gCost + 1
+                    self.g_cost = parent.g_cost + 1 # cost to get there
                 else:
-                    self.gCost = 0
-                self.hCost = abs(x - endX) + abs(y - endY)
-                self.f_cost = self.gCost + self.hCost
+                    self.g_cost = 0
+                self.h_cost = abs(x - endX) + abs(y - endY) # apprx to get to the end
+                self.f_cost = self.g_cost + self.h_cost
             
             def __repr__(self):
                 return "ANode at ({},{})".format(self.x, self.y)
+
+            def __lt__(self, other): # less than <
+                return self.f_cost < other.f_cost or (self.f_cost == other.f_cost and self.g_cost < other.g_cost)
+
+        class _ANodeHandler:
+            def __init__(self):
+                self._dict = {}
+                self._heap = []
+
+            def add(self, node):
+                self._dict[(node.x, node.y)] = node
+                heapq.heappush(self._heap, node)
+
+            def pop(self):
+                node = heapq.heappop(self._heap)
+                del self._dict[(node.x, node.y)]
+                return node
+
+            def __contains__(self, node):
+                """ONLY CHECK COORDINATES"""
+                return (node.x, node.y) in self._dict
+
+            def get(self, x, y):
+                return self._dict[(x, y)]
+
+            def replace(self, node):
+                """replaces node at same position"""
+                self._dict[(node.x, node.y)].g_cost = node.g_cost
+                self._dict[(node.x, node.y)].f_cost = node.f_cost
+                self._dict[(node.x, node.y)].parent = node.parent
+
+            def __len__(self):
+                return len(self._heap)
         
-        openList = [_ANode(startX, startY, endX, endY)]
-        closedList = [] # already visited nodes
+        openList = _ANodeHandler() #heapq binary tree
+        openList.add(_ANode(startX, startY, endX, endY))
+        closedList = {} # already visited nodes
 
         while True:
-            if not len(openList) > 0: # no possible path
+            if len(openList) == 0: # no possible path
                 return []
-            else:
-                current = openList[0]
 
-            for node in openList:
-                if node.f_cost < current.f_cost or (node.f_cost == current.f_cost and node.gCost < current.gCost):
-                    current = node
+            current = openList.pop()
+            closedList[(current.x, current.y)] = True
 
-            openList.remove(current)
-            closedList.append(current)
+            neighbours = []
+            for direction in Constants.Direction:
+                if self.canDrive(current.x, current.y, direction) and self.getAtOffset(current.x, current.y, direction) != None:#
+                    offset = self.directionToOffset(direction)
+                    destination_coords = current.x + offset[0], current.y + offset[1]
+                    if destination_coords in closedList:
+                        continue
+                    neighbours.append(_ANode(*destination_coords, endX, endY, current))
 
-            neighbors = []
-            if self.get(current.x, current.y)[Constants.Direction.NORTH] is False and current.y - 1 >= 0 and self.get(current.x, current.y - 1)[Constants.BLACK] is False:
-                neighbors.append(_ANode(current.x, current.y - 1, endX, endY, current))
-            if self.get(current.x, current.y)[Constants.Direction.SOUTH] is False and current.y + 1 < self.sizeY and self.get(current.x, current.y + 1)[Constants.BLACK] is False:
-                neighbors.append(_ANode(current.x, current.y + 1, endX, endY, current))
-            if self.get(current.x, current.y)[Constants.Direction.WEST] is False and current.x - 1 >= 0 and self.get(current.x - 1, current.y)[Constants.BLACK] is False:
-                neighbors.append(_ANode(current.x - 1, current.y, endX, endY, current))
-            if self.get(current.x, current.y)[Constants.Direction.EAST] is False and current.x + 1 < self.sizeX and self.get(current.x + 1, current.y)[Constants.BLACK] is False:
-                neighbors.append(_ANode(current.x + 1, current.y, endX, endY, current))
-
-            for neighbour in neighbors:
-                alreadyVisited = False
-
+            for neighbour in neighbours:
                 if neighbour.x == endX and neighbour.y == endY:
-                    ret = [neighbour]
-                    node = neighbour.parent
+                    ret = []
+                    node = neighbour
                     while node is not None:
                         ret.append(node)
                         node = node.parent
                     ret.reverse()
+                    print(closedList)
                     return ret
 
-                for closedNode in closedList:
-                    if neighbour.x == closedNode.x and neighbour.y == closedNode.y:
-                        alreadyVisited = True
-                        break
+                already_set = False
 
-                for openNode in openList:
-                    if neighbour.x == openNode.x and neighbour.y == openNode.y:
-                        if neighbour.f_cost < openNode.f_cost or (neighbour.f_cost == openNode.f_cost and neighbour.gCost < openNode.gCost):
-                            openList.remove(openNode)
-                            openList.append(neighbour)
-                        alreadyVisited = True
-                        break
+                if neighbour in openList:
+                    equiv = openList.get(neighbour.x, neighbour.y)
+                    if neighbour.f_cost < equiv.f_cost or (neighbour.f_cost == equiv.f_cost and neighbour.g_cost < equiv.g_cost):
+                        openList.replace(neighbour)
+                    already_set = True
 
-                if not alreadyVisited:
-                    openList.append(neighbour)
+                if not already_set:
+                    openList.add(neighbour)
 
     def search(self, origin: Position, tile: MazeTile):
         """Searches for MazeTile. Attribute can be set to SearchFilterAttribute.ANY, if it is not supposed to be checked
@@ -534,10 +574,9 @@ class Map:
         checked_tiles = {} # key is (x, y)
         while True:
             if queue.qsize() == 0:
-                break
+                return None, None, None
             qelem = queue.get()
             tl = qelem[0]
-            print(f"checking {qelem[1]}, {qelem[2]}")
             matches = True
             for attribute in check_attributes:
                 if tl[attribute] != tile[attribute]:
@@ -555,5 +594,4 @@ class Map:
                 destination = self.get(*destination_coords)
                 if destination != None and not destination[self.inverseDirection(direction)]:
                     queue.put((destination, *destination_coords))
-
-
+                    checked_tiles[destination_coords] = True
