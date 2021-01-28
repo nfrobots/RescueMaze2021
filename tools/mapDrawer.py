@@ -58,6 +58,15 @@ def draw_map(canvas, map):
         for x in range(map.sizeX):
             data: Mapping.MazeTile = map.map[y,x]._data
 
+            if data[Constants.KNOWN]:
+                canvas.create_rectangle(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, fill="#fff")
+            if data[Constants.BLACK]:
+                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.BLACK], anchor='nw')
+            if data[Constants.VICTIM]:
+                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.VICTIM], anchor='nw')
+            if data[Constants.RAMP]:
+                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.RAMP], anchor='nw')
+
             canvas.create_line(x*tile_size + PAD + D, y*tile_size + PAD + D, x*tile_size + PAD + D, (y+1)*tile_size + PAD - D, **LINE_CONFIG,\
                 fill=WALL_ACTIVE_COLOR if data[Constants.Direction.WEST] else WALL_INACTIVE_COLOR)
             canvas.create_line(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, y*tile_size + PAD + D, **LINE_CONFIG,\
@@ -67,17 +76,15 @@ def draw_map(canvas, map):
             canvas.create_line((x+1)*tile_size + PAD - D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, **LINE_CONFIG,\
                 fill=WALL_ACTIVE_COLOR if data[Constants.Direction.EAST] else WALL_INACTIVE_COLOR)
 
-            if data[Constants.BLACK]:
-                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.BLACK], anchor='nw')
-            if data[Constants.VICTIM]:
-                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.VICTIM], anchor='nw')
-            if data[Constants.RAMP]:
-                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.RAMP], anchor='nw')
 
     canvas.create_image(map.robot.x*tile_size + PAD + D, map.robot.y*tile_size + PAD + D, image=images["Robot"][map.robot.direction], anchor='nw')
 
+def highlight_tile(canvas, map, x, y):
+    tile_size = calculate_tile_size(canvas, map)
+    D = TILE_DISTANCE // 2
+    return canvas.create_rectangle(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, fill="#ff69b4", width=0)
 
-if __name__ == "__main__":
+def show_map(map):
     root = Tk()
     root.geometry("600x600")
 
@@ -86,8 +93,7 @@ if __name__ == "__main__":
     canvas = Canvas(root)
     canvas.grid(row=0, column=0, sticky='nswe')
     root.update()
-    map = Mapping.Map.open("./Pi/out/testmap.json")
-    draw_map(canvas, map)
+    highlight_tile(canvas, map, 1, 1)
 
     def updater():
         draw_map(canvas, map)
@@ -95,5 +101,7 @@ if __name__ == "__main__":
 
     root.after(1000, updater)
 
-
     root.mainloop()
+
+if __name__ == "__main__":
+    show_map(Mapping.Map.open("./Pi/out/testmap3.json"))
