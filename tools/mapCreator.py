@@ -111,6 +111,10 @@ class mapCreator(Tk):
             var = self.checkbutton_values[Constants.Direction.WEST]
         elif event.char == "6":
             var = self.checkbutton_values[Constants.Direction.EAST]
+        elif event.char == "5":
+            var = self.checkbutton_values[Constants.VICTIM]
+        elif event.char == "1":
+            var = self.checkbutton_values[Constants.BLACK]
         if var != None:    
             var.set(not var.get())
             self.apply_properties()
