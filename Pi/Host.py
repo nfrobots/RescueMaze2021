@@ -1,6 +1,10 @@
 import Receiver
+import Interpreter
+import Calibrator
+import Devices
 
 import time
+import json
 import socket
 
 HOST = '10.42.0.21'
@@ -21,13 +25,22 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         exit()
         
     with conn:
+
         while True:
             incomeing_byte = conn.recv(1)
             if incomeing_byte == b'd':
                 data = None
                 while data == None:
-                    data = Receiver.request_data_bytes()
+                    data = json.dumps(Interpreter.interprete_data(Receiver.get_data())).encode('utf-8')
                 conn.sendall(data)
+            elif incomeing_byte == b'c':
+                value_string = conn.recv(1024).decode('utf-8')
+                print(value_string)
+                Calibrator.calibrate(value_string)
+            elif incomeing_byte == b'l':
+                rgb_string = conn.recv(1024).decode('utf-8')
+                r, g, b = rgb_string.split(" ")
+                Devices.leds.fill((int(r), int(g), int(b)))
             elif incomeing_byte == b'q':
                 break
 

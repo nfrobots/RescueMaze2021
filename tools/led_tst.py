@@ -12,14 +12,21 @@ def color_wheel(n):
         return (0, 255 - modifier, modifier)
     else:
         modifier = (n - 170) * 3
-        return (modifier, 0, 255 - modifier * 3)
+        return (modifier, 0, 255 - modifier)
 
 
 NUM_LEDS = 12
 
-leds = WS2801(board.SCLK, board.MOSI, NUM_LEDS*3, brightness=0.5)
+leds = WS2801(board.SCLK, board.MOSI, NUM_LEDS*3, brightness=0.1)
 
-for i in range(85 // 5):
-    leds.fill(color_wheel(i * 5))
-    print(color_wheel(i * 5))
-    time.sleep(0.4)
+def startup():
+    for i in range(NUM_LEDS):
+        leds.fill((0, 0, 0))
+        leds[i] = (255, 0, 40)
+        time.sleep(0.6)
+
+    leds.fill((0, 255, 0))
+    time.sleep(1)
+    leds.fill((0, 0, 0))
+
+startup()

@@ -12,7 +12,12 @@ while serial_connection.in_waiting == 0:
     print("[INFO] WAITING FOR ARDUINO TO FINISH INITIALIZATION AND ESTABLISH SERIAL CONNETION")
     time.sleep(0.5)
 
-setup_info = serial_connection.read(1024).decode("utf-8")
+try:
+    setup_info = serial_connection.read(1024).decode("utf-8")
+except UnicodeDecodeError:
+    print("could not decode setup info")
+    setup_info = "|DECODE ERROR|"
+
 
 if "[ERROR]" in setup_info:
     print("SHIIT BRUH")
@@ -27,6 +32,7 @@ def request_data_bytes():
     incomeing_char = serial_connection.read()
 
     if incomeing_char == b'': # serial_connection.read() resulted in time-out
+        print("serial read timed out")
         return None
 
     while incomeing_char != b'}':
@@ -49,9 +55,16 @@ def get_data():
         return data_json
     except json.decoder.JSONDecodeError:
         print("error occured while decoding json string")
-
+        
+def get_data_s():
+    data = get_data()
+    while get_data == None:
+        print("get_data_s: get_data failed!")
+        data = get_data()
+    return data
 
 if __name__ == "__main__":
     for _ in range(100):
         print(get_data()["IR0"])
         time.sleep(1)
+        
