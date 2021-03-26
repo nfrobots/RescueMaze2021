@@ -8,66 +8,65 @@ from pathlib import Path
 with open(Path(__file__).parent.parent / "Pi/out/log.txt") as f:
     instructions = f.read().split('\n')
 
-def convertArgs(string):
-    if string == "<RelDirection.FORWARD: 0>":
-        return RelDirection.FORWARD
-    elif string == "<RelDirection.RIGHT: 1>":
-        return RelDirection.RIGHT
-    elif string == "<RelDirection.BACKWARD: 2>":
-        return RelDirection.BACKWARD
-    elif string == "<RelDirection.LEFT: 3>":
-        return RelDirection.LEFT
-    elif string == "<Direction.NORTH: 0>":
-        return Direction.NORTH
-    elif string == "<Direction.EAST: 1>":
-        return Direction.EAST
-    elif string == "<Direction.SOUTH: 2>":
-        return Direction.SOUTH
-    elif string == "<Direction.WEST: 3>":
-        return Direction.WEST
-    elif string == "'BLACK'":
-        return BLACK
-    elif string == "'RAMP'":
-        return RAMP
-    elif string == "'VICTIM'":
-        return VICTIM
-    elif string == "True":
-        return True
-    elif string == "False":
-        return False
-    else:
-        try:
-            return eval(string)
-        except ValueError:
-            return string
+def evalArg(string):
+    if string[0] != "<":
+        return eval(string)
+    elif string[0:10] == "<MazeTile:":
+        tile = Mapping.MazeTile()
+        rawAttributes = string[11:].replace(">", "").split("\t")
+        for rawAttribute in rawAttributes:
+            attribute_string, value = rawAttribute.split(": ")
+            tile[eval(attribute_string)] = eval(value)
+        return tile
+    elif string[0:13] == "<RelDirection":
+        rawRelDirection = string[1:].split(": ")
+        return eval(rawRelDirection[0])
 
 
 root = tkinter.Tk()
-root.geometry("{}x{}".format(mapDrawer.W_WIDTH, mapDrawer.W_HEIGHT))
+root.geometry("{}x{}".format(500, 500))
 frm = tkinter.Frame(root, relief='flat', borderwidth=4)
 frm.pack(fill=tkinter.BOTH, expand=1)
 cv = tkinter.Canvas(frm)
 cv.pack(fill=tkinter.BOTH, expand=1)
 
-m = Mapping.Map()
+m = Mapping.Map(path_pre_expand=True)
 
-mapDrawer.drawMap(m._store(), cv)
+mapDrawer.draw_map(cv, m)
 
 index = 0
 def step():
     global index
-    instruction = instructions[index]
-    if instruction == "":
+    instruction = instructions[index].rstrip()
+    if instruction == "" or instruction == "\n":
+        index += 1 if index < len(instructions) - 1 else 0
         return
-    print(instruction)
+    index += 1
+    
     fmtInstruction = instruction.split(";")
     function = fmtInstruction[0]
-    args = [convertArgs(a) for a in fmtInstruction[1].replace(")", "").split(", ")[1::]]
+    rawArgs = fmtInstruction[1].replace(")", "").split(", ")[1:]
+    args = [evalArg(a) for a in rawArgs]
     getattr(m, function)(*args)
-    index += 1
-    mapDrawer.drawMap(m._store(), cv)
+    mapDrawer.draw_map(cv, m)
 
-button = tkinter.Button(frm, width=10, height=2, bg="green", border="0", command=step)
+auto_step_enabled = False
+
+def auto_step_enable():
+    global auto_step_enabled
+    auto_step_enabled = not auto_step_enabled
+
+def auto_step():
+    if auto_step_enabled:
+        step()
+    root.after(100, auto_step)
+
+button = tkinter.Button(frm, width=10, height=2, bg="green", border="0", command=auto_step_enable)
 button.pack()
+
+button2 = tkinter.Button(frm, width=10, height=2, bg="blue", border="0", command=step)
+button2.pack()
+
+auto_step()
 
 root.mainloop()

@@ -1,5 +1,6 @@
+from RMMLIB4 import Constants, Mapping
+
 import json
-import types
 from math import sqrt, tanh
 
 def distance_nn(a, b):
@@ -9,16 +10,18 @@ def distance_nn(a, b):
 def euk_distance_nd(a, b):
     return sqrt(sum((a[i] - b[i])**2 for i in range(len(a))))
 
-INTERPREDED_DATA_TEMPLATE = {
-    "wall_left": 0,
-    "wall_front": 0,
-    "wall_right": 0,
-    "wall_back": 0,
-    "wall_doubfrn": 0,
-    "ramp": 0,
-    "victim": 0,
-    "black": 0
-}
+INTERPREDED_DATA_TEMPLATE = Mapping.MAZE_TILE_TEMPLATE
+
+# MAZE_TILE_TEMPLATE =  {
+#     Constants.KNOWN: False,             # tile is known
+#     Constants.Direction.NORTH: False,   # north wall existing
+#     Constants.Direction.SOUTH: False,   # south wall existing
+#     Constants.Direction.WEST: False,    # west wall existing
+#     Constants.Direction.EAST: False,    # east wall existing
+#     Constants.RAMP: False,              # ramp existing
+#     Constants.VICTIM: False,            # victim existing
+#     Constants.BLACK: False              # black tile existing
+# }
 
 K_TANH = 1.2
 

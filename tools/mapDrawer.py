@@ -1,95 +1,107 @@
-import tkinter
-import json
-from PIL import Image, ImageTk
-from pathlib import Path
+from tkinter import Tk, Canvas, Label
+from RMMLIB4 import Mapping, Constants
+from PIL import ImageTk, Image
 
-GLOBAL_IMAGES = {}
+PAD = 10
+TILE_DISTANCE = 10
 
-W_WIDTH = 1300
-W_HEIGHT = 800
+LINE_CONFIG = {
+    "width": 4
+}
 
-linewidth = 3
-pad = 7
-wallColor = "#000"
-emptyColor = "#bbb"
+WALL_ACTIVE_COLOR = "#000"
+WALL_INACTIVE_COLOR = "#999"
 
-def drawMap(mapData, mapCanvas):
-    global GLOBAL_IMAGES
-    tileSize = (min(W_WIDTH - 50, W_HEIGHT - 50) - (pad * 2)) / max(mapData["sizeX"], mapData["sizeY"])
-    lineLen = tileSize - pad
+CACHED_IMAGES = None
+CACHED_IMAGES_SIZE = None
 
-    roboImg = Image.open(Path(__file__).parent / "images/Robot.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)
-
-    GLOBAL_IMAGES = {
-        "VICTIM": ImageTk.PhotoImage(Image.open(Path(__file__).parent / "images/Victim.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
-        "BLACK": ImageTk.PhotoImage(Image.open(Path(__file__).parent / "images/Black.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
-        "RAMP": ImageTk.PhotoImage(Image.open(Path(__file__).parent / "images/Ramp.png").resize((int(lineLen), int(lineLen)), Image.BILINEAR)),
-        "ROBOT": {
-            "Direction.NORTH": ImageTk.PhotoImage(roboImg),
-            "Direction.SOUTH": ImageTk.PhotoImage(roboImg.rotate(180, Image.BILINEAR)),
-            "Direction.WEST": ImageTk.PhotoImage(roboImg.rotate(90, Image.BILINEAR)),
-            "Direction.EAST": ImageTk.PhotoImage(roboImg.rotate(270, Image.BILINEAR)),
+def load_images(size):
+    global CACHED_IMAGES, CACHED_IMAGES_SIZE
+    if CACHED_IMAGES_SIZE != size:
+        CACHED_IMAGES = {
+            Constants.BLACK:  ImageTk.PhotoImage(Image.open("./tools/images/Black.png").resize((size, size))),
+            Constants.VICTIM: ImageTk.PhotoImage(Image.open("./tools/images/Victim.png").resize((size, size))),
+            Constants.RAMP:   ImageTk.PhotoImage(Image.open("./tools/images/Ramp.png").resize((size, size))),
+            "Robot": {
+                Constants.Direction.NORTH: ImageTk.PhotoImage(Image.open("./tools/images/Robot.png").resize((size, size))),
+                Constants.Direction.WEST:  ImageTk.PhotoImage(Image.open("./tools/images/Robot.png").resize((size, size)).rotate(90)),
+                Constants.Direction.SOUTH: ImageTk.PhotoImage(Image.open("./tools/images/Robot.png").resize((size, size)).rotate(180)),
+                Constants.Direction.EAST:  ImageTk.PhotoImage(Image.open("./tools/images/Robot.png").resize((size, size)).rotate(270)),
+            }
         }
-    }
+        CACHED_IMAGES_SIZE = size
+    return CACHED_IMAGES
 
-    mapCanvas.delete("all")
+def calculate_tile_size(canvas, map):
+    canvas_height = max(canvas.winfo_height(), 100)
+    canvas_width  = max(canvas.winfo_width(), 100)
 
-    for posStr in mapData["Map"]:
-        x, y = [int(a) for a in posStr.split(',')]
+    tile_size = min((canvas_height - 2*PAD) // map.sizeY, (canvas_width - 2*PAD) // map.sizeX)
+    return tile_size
 
-        if mapData["Map"][posStr]["Direction.NORTH"] == True:
-            northColor = wallColor
-        else:
-            northColor = emptyColor
-        if mapData["Map"][posStr]["Direction.SOUTH"] == True:
-            southColor = wallColor
-        else:
-            southColor = emptyColor
-        if mapData["Map"][posStr]["Direction.EAST"] == True:
-            eastColor = wallColor
-        else:
-            eastColor = emptyColor
-        if mapData["Map"][posStr]["Direction.WEST"] == True:
-            westColor = wallColor
-        else:
-            westColor = emptyColor
+def draw_map(canvas, map):
+    """draw a map on given tk canvas
 
-        px = x * tileSize + pad
-        py = y * tileSize + pad
+    Args:
+        canvas (tkinter.Canvas): canvas to draw the map on
+        map (RMMLIB4.Mapping.Map): map to draw
+    """
+    canvas.delete("all")
 
-        mapCanvas.create_line(px, py, px + lineLen, py, width=linewidth, fill=northColor)                     #NORTH
-        mapCanvas.create_line(px, py + lineLen, px + lineLen, py + lineLen, width=linewidth, fill=southColor) #SOUTH
-        mapCanvas.create_line(px + lineLen, py, px + lineLen, py + lineLen, width=linewidth, fill=eastColor)  #EAST
-        mapCanvas.create_line(px, py, px, py + lineLen, width=linewidth, fill=westColor)                      #WEST
+    tile_size = calculate_tile_size(canvas, map)
+    D = TILE_DISTANCE // 2
+    image_size = tile_size - PAD
 
-        if mapData["Map"][posStr]["VICTIM"] == True:
-            mapCanvas.create_image(px, py, anchor=tkinter.NW, image=GLOBAL_IMAGES["VICTIM"])
+    images = load_images(image_size)
+    
+    for y in range(map.sizeY):
+        for x in range(map.sizeX):
+            data: Mapping.MazeTile = map.map[y,x]._data
 
-        if mapData["Map"][posStr]["BLACK"] == True:
-            mapCanvas.create_image(px, py, anchor=tkinter.NW, image=GLOBAL_IMAGES["BLACK"])
+            if data[Constants.KNOWN]:
+                canvas.create_rectangle(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, fill="#fff")
+            if data[Constants.BLACK]:
+                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.BLACK], anchor='nw')
+            if data[Constants.VICTIM]:
+                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.VICTIM], anchor='nw')
+            if data[Constants.RAMP]:
+                canvas.create_image(x*tile_size + PAD + D, y*tile_size + PAD + D, image=images[Constants.RAMP], anchor='nw')
 
-        if mapData["Map"][posStr]["RAMP"] == True:
-            mapCanvas.create_image(px, py, anchor=tkinter.NW, image=GLOBAL_IMAGES["RAMP"])
+            canvas.create_line(x*tile_size + PAD + D, y*tile_size + PAD + D, x*tile_size + PAD + D, (y+1)*tile_size + PAD - D, **LINE_CONFIG,\
+                fill=WALL_ACTIVE_COLOR if data[Constants.Direction.WEST] else WALL_INACTIVE_COLOR)
+            canvas.create_line(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, y*tile_size + PAD + D, **LINE_CONFIG,\
+                fill=WALL_ACTIVE_COLOR if data[Constants.Direction.NORTH] else WALL_INACTIVE_COLOR)
+            canvas.create_line(x*tile_size + PAD + D, (y+1)*tile_size + PAD - D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, **LINE_CONFIG,\
+                fill=WALL_ACTIVE_COLOR if data[Constants.Direction.SOUTH] else WALL_INACTIVE_COLOR)
+            canvas.create_line((x+1)*tile_size + PAD - D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, **LINE_CONFIG,\
+                fill=WALL_ACTIVE_COLOR if data[Constants.Direction.EAST] else WALL_INACTIVE_COLOR)
 
-    px = mapData["robotX"] * tileSize + pad
-    py = mapData["robotY"] * tileSize + pad
-    mapCanvas.create_image(px, py, anchor=tkinter.NW, image=GLOBAL_IMAGES["ROBOT"][mapData["robotDirection"]])
 
+    canvas.create_image(map.robot.x*tile_size + PAD + D, map.robot.y*tile_size + PAD + D, image=images["Robot"][map.robot.direction], anchor='nw')
+
+def highlight_tile(canvas, map, x, y):
+    tile_size = calculate_tile_size(canvas, map)
+    D = TILE_DISTANCE // 2
+    return canvas.create_rectangle(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, fill="#ff69b4", width=0)
+
+def show_map(map):
+    root = Tk()
+    root.geometry("600x600")
+
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    canvas = Canvas(root)
+    canvas.grid(row=0, column=0, sticky='nswe')
+    root.update()
+    highlight_tile(canvas, map, 1, 1)
+
+    def updater():
+        draw_map(canvas, map)
+        root.after(1000, updater)
+
+    root.after(1000, updater)
+
+    root.mainloop()
 
 if __name__ == "__main__":
-    window = tkinter.Tk()
-    window.geometry("{}x{}".format(W_WIDTH, W_HEIGHT))
-    window.resizable(0, 0)
-    window.configure(bg="white")
-
-    frm = tkinter.Frame(window, relief='flat', borderwidth=4)
-    frm.pack(fill=tkinter.BOTH, expand=1)
-    cv = tkinter.Canvas(frm)
-    cv.pack(fill=tkinter.BOTH, expand=1)
-
-    with open(Path(__file__).parent.parent / "Pi/out/map.json") as f:
-        data = json.load(f)
-
-    drawMap(data, cv)
-
-    window.mainloop()
+    show_map(Mapping.Map.open("./Pi/out/testmap3.json"))

@@ -1,5 +1,5 @@
-import mapDrawer
-import Client
+from tools import mapDrawer, Client
+from RMMLIB4 import Mapping
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -9,8 +9,8 @@ from inspect import Parameter
 import ast
 
 
-W_WIDTH = 1920
-W_HEIGHT = 1080
+W_WIDTH = 1280
+W_HEIGHT = 720
 
 REFRESH_RATE = 1000 # milliseconds delay to call refresh functions
 
@@ -78,8 +78,15 @@ class App(Tk):
         self.active_module = self.modules[Home]
         self.enable_module(Home)
 
+        self.update()
+
+        for module in self.modules:
+            self.modules[module].post_init()
+
+        self.module_selectors["QUIT_BUTTON"] = Button(self.module_selector_frame, text="QUIT", cnf=BUTTON_CONFIG, command=self.on_window_close)
+        self.module_selectors["QUIT_BUTTON"].grid(row=len(MODULES), column=0, sticky="nswe")
+
         self.refresh()
-        self.after(REFRESH_RATE, self.update)
 
     def enable_module(self, module):
         self.module_selectors[type(self.active_module)].configure(bg=BUTTON_COLOR_INACTIVE)
@@ -96,31 +103,37 @@ class App(Tk):
         self.destroy()
 
 
-class Home(Frame):
-    def __init__(self, root):
-        super().__init__(root, FRAME_CONFIG)
-        self.text = Label(self, text=\
-            "w: {}; h: {}".format(self.master.winfo_reqwidth(), self.master.winfo_reqheight()), **LABEL_CONFIG)
-        self.text.pack()
+class AbstractModule(Frame):
+    def __init__(self, root, *args, **kwargs):
+        super().__init__(root, *args, **kwargs)
 
     def refresh(self):
-        self.text.configure(text="w: {}; h: {}".format(self.master.winfo_width(), self.master.winfo_height()))
-
-
-class MapVisualisation2(Frame):
-    def __init__(self, root):
-        super().__init__(root, FRAME_CONFIG)
-        canvas = Canvas(self)
-        canvas.pack(fill="both", expand=1)
-        with open(Path(__file__).parent.parent / "Pi/out/map.json") as f:
-            data = json.load(f)
-        mapDrawer.drawMap(data, canvas)
-
-    def refresh(self):
+        """Is called repetedly. REFRESH_RATE determines time between calls"""
         pass
 
+    def post_init(self):
+        """Is called once after all Modules are initialized"""
+        pass
 
-class SensorView(Frame):
+class Home(AbstractModule):
+    def __init__(self, root):
+        super().__init__(root, FRAME_CONFIG)
+        self.connect_button = Button(self, text="Connect to Robot", cnf=BUTTON_CONFIG, bg='green')
+        self.connect_button.pack(expand=1)
+
+
+class MapVisualisation2(AbstractModule):
+    def __init__(self, root):
+        super().__init__(root, FRAME_CONFIG)
+        self.canvas = Canvas(self, **ENTRY_CONFIG)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.canvas.grid(column=0, row=0, sticky='nswe')
+
+    def refresh(self):
+        mapDrawer.draw_map(self.canvas, Mapping.Map.open("./Pi/out/map.json"))
+
+class SensorView(AbstractModule):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
 
@@ -157,23 +170,17 @@ class SensorView(Frame):
         self.active_mode.refresh()
 
 
-class SersorViewNumberMode(Frame):
+class SersorViewNumberMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, bg="yellow")
 
-    def refresh(self):
-        pass
 
-
-class SensorViewGraphMode(Frame):
+class SensorViewGraphMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, bg="green")
 
-    def refresh(self):
-        pass
 
-
-class SersorViewVisualMode(Frame):
+class SersorViewVisualMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.grid_rowconfigure(0, weight=1)
@@ -184,16 +191,31 @@ class SersorViewVisualMode(Frame):
 
     def refresh(self):
         self.canvas.delete("all")
-        for counter, (key, value) in enumerate(SENSOR_DATA_FUNCTION().items()):
-            self.canvas.create_text(30, counter*self.t_height + 50, text=key)
-            self.canvas.create_rectangle(80, counter*self.t_height + 20, 80 + value, counter*self.t_height + 80)
+        data = SENSOR_DATA_FUNCTION()
+        data_iterable = data.items()
+        for counter, (key, value) in enumerate(data_iterable):
+            value = round(value, 5)
+            self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
+            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value*500, counter*self.t_height + 60, fill="#000")
 
-SENSOR_DATA_FUNCTION = Client.request_data
+SENSOR_DATA_FUNCTION =  Client.request_data
+#SENSOR_DATA_FUNCTION = lambda: {"test": 1}
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
 
-class CommandModule(Frame):
+class LedModule(AbstractModule):
+    def __init__(self, root):
+        super().__init__(root, FRAME_CONFIG)
+        r = Entry(self)
+        r.pack()
+        g = Entry(self)
+        g.pack()
+        b = Entry(self)
+        b.pack()
+        Button(self, text="send", command=lambda: Client.request_led_color(r.get(), g.get(), b.get())).pack()
+
+class CommandModule(AbstractModule):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.command_frames = {}
@@ -310,30 +332,23 @@ class CommandModule(Frame):
 
         command(*args, **kwargs)
 
-    def refresh(self):
-        pass
+def calibrate(value):
+    Client.request_calibration(value)
 
-COMMANDS = []
+def calibrate_victim():
+    Client.request_calibration("VICTIM_COLOR")
 
-def say_hello():
-    print("hello")
+def calibrate_white():
+    Client.request_calibration("WHITE_COLOR")
 
-def say_hello2(value, *, val="Non"):
-    print("hello"*value, val)
+def led(r, g, b):
+    Client.request_led_color(r, g, b)
 
-def moiiin_meister2(a, b="lol", *args, **kwargs):
-    print("moiiin_meister2 called with: ", a, b, args, kwargs)
-
-def moiiin_meister(a, b=4, *args):
-    pass
+COMMANDS = [calibrate, calibrate_victim, calibrate_white, led]
 
 
-MODULES = (Home, MapVisualisation2, SensorView, CommandModule)
+MODULES = (Home, MapVisualisation2, SensorView, LedModule, CommandModule)
 
 if __name__ == '__main__':
-    COMMANDS.append(say_hello)
-    COMMANDS.append(say_hello2)
-    COMMANDS.append(moiiin_meister2)
-
     a = App()
     a.mainloop()
