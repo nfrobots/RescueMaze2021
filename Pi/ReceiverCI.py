@@ -25,8 +25,34 @@ class ArduinoData:
     greyscale: int = 0
     ultrasonic_left: int = 0
     ultrasonic_right: int = 0
+    
+    def get_rgba(self):
+        return [self.color_red, self.color_green, self.color_blue, self.color_alpha]
 
+ARDUINO_DEVSTR_TO_PI_DEVSTR = {
+    "LIR": "long_distance_ir",
+    "IR0": "ir_0",
+    "IR1": "ir_1",
+    "IR2": "ir_2",
+    "IR3": "ir_3",
+    "IR4": "ir_4",
+    "IR5": "ir_5",
+    "IR6": "ir_6",
+    "IR7": "ir_7",
+    "GYX": "gyro_x",
+    "GYZ": "gyro_y",
+    "GYZ": "gyro_z",
+    "RED": "color_red",
+    "GRE": "color_green",
+    "BLU": "color_blue",
+    "ALP": "color_alpha",
+    "GRS": "greyscale",
+    "USL": "ultrasonic_left",
+    "USR": "ultrasonic_right"
+}
 
+def arduino_devstr_to_py_devstr(arduino_devstr: str):
+    return ARDUINO_DEVSTR_TO_PI_DEVSTR.get(arduino_devstr, None)
 
 class Receiver:
     def __new__(cls, port='/dev/ttyACM0'):

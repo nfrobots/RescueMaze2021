@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from pathlib import Path
 
-from Pi.ReceiverCI import Receiver #, ArduinoData 
+from Pi.ReceiverCI import Receiver, ArduinoData, arduino_devstr_to_py_devstr
 
 
 class CalibrationTarget(str, Enum):
@@ -15,6 +15,11 @@ class CalibrationTarget(str, Enum):
     WALL_RIGHT        = "WALL_RIGHT"
     WALL_BACK         = "WALL_BACK"
     WALL_2ND_FRONT_LD = "WALL_2ND_FRONT_LD"
+    NO_WALL_LEFT      = "NO_WALL_LEFT"
+    NO_WALL_FRONT     = "NO_WALL_FRONT"
+    NO_WALL_RIGHT     = "NO_WALL_RIGHT"
+    NO_WALL_BACK      = "NO_WALL_BACK"
+    NO_WALL_2ND_FRONT_LD = "NO_WALL_2ND_FRONT_LD"
     GYRO_FLAT         = "GYRO_FLAT"
     GYRO_INCLINE      = "GYRO_INCLINE"
 
@@ -38,7 +43,8 @@ class Calibrator:
             json.dump(self.calibration_data, f)
         
     def calibrate(self, target: CalibrationTarget):
-        sensor_data = Receiver().get_data_s()
+        # sensor_data = Receiver().get_data_s()
+        sensor_data = ArduinoData(valid=False)
         
         if target in (CalibrationTarget.COLOR_RED, CalibrationTarget.COLOR_WHITE,
                     CalibrationTarget.COLOR_SILVER, CalibrationTarget.COLOR_BLACK):
@@ -48,30 +54,30 @@ class Calibrator:
                 "BLU": sensor_data.color_blue,
                 "ALP": sensor_data.color_alpha
             }
-        elif target == CalibrationTarget.WALL_LEFT:
+        elif target in (CalibrationTarget.WALL_LEFT, CalibrationTarget.NO_WALL_LEFT):
             self.calibration_data[target] = {
                 "IR0": sensor_data.ir_0,
                 "IR1": sensor_data.ir_1,
                 "USL": sensor_data.ultrasonic_left
             }
-        elif target == CalibrationTarget.WALL_FRONT:
+        elif target in (CalibrationTarget.WALL_FRONT, CalibrationTarget.NO_WALL_FRONT):
             self.calibration_data[target] = {
                 "IR2": sensor_data.ir_2,
                 "IR3": sensor_data.ir_3,
                 "LIR": sensor_data.long_distance_ir
             }
-        elif target == CalibrationTarget.WALL_RIGHT:
+        elif target in (CalibrationTarget.WALL_RIGHT, CalibrationTarget.NO_WALL_RIGHT):
             self.calibration_data[target] = {
                 "IR4": sensor_data.ir_4,
                 "IR5": sensor_data.ir_5,
                 "USR": sensor_data.ultrasonic_right
             }
-        elif target == CalibrationTarget.WALL_BACK:
+        elif target in (CalibrationTarget.WALL_BACK, CalibrationTarget.NO_WALL_BACK):
             self.calibration_data[target] = {
                 "IR6": sensor_data.ir_6,
                 "IR7": sensor_data.ir_7
             }
-        elif target == CalibrationTarget.WALL_2ND_FRONT_LD:
+        elif target in (CalibrationTarget.WALL_2ND_FRONT_LD, CalibrationTarget.NO_WALL_2ND_FRONT_LD):
             self.calibration_data[target] = {
                 "LIR": sensor_data.long_distance_ir
             }
@@ -83,20 +89,24 @@ class Calibrator:
             }
         else:
             print("[ERROR] calibration target is not implemented")
-        
 
+    def get_calibration(self, target: CalibrationTarget) -> ArduinoData:
+        data = ArduinoData(valid=True)
+        for key in self.calibration_data[target]:
+            setattr(data, arduino_devstr_to_py_devstr(key), self.calibration_data[target][key])
 
-
-
-
+        return data
 
 if __name__ == '__main__':
     from pprint import pprint
     clb = Calibrator()
-    # [clb.calibrate(a) for a in CalibrationTarget]
-    # pprint(clb.calibration_data)
-    # clb.save_calibration()
-
     clb.load_calibration()
-    clb.calibrate(CalibrationTarget.COLOR_RED)
-    pprint(clb.calibration_data)
+
+    pprint(clb.get_calibration(CalibrationTarget.COLOR_RED))
+
+    # [clb.calibrate(a) for a in CalibrationTarget]
+    # # pprint(clb.calibration_data)
+    # # clb.save_calibration()
+
+    # clb.calibrate(CalibrationTarget.COLOR_RED)
+    # pprint(clb.calibration_data)

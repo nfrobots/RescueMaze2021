@@ -1,4 +1,4 @@
-import Receiver
+from Pi import Receiver
 
 import json
 
