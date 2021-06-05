@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 
 from Pi.ReceiverCI import Receiver, ArduinoData, arduino_devstr_to_py_devstr
-
+from util.Singleton import Singleton
 
 class CalibrationTarget(str, Enum):
     COLOR_RED         = "COLOR_RED"
@@ -24,9 +24,9 @@ class CalibrationTarget(str, Enum):
     GYRO_INCLINE      = "GYRO_INCLINE"
 
 
+class Calibrator(Singleton):
 
-class Calibrator:
-    def __init__(self):
+    def _init(self):
         self.path = Path(__file__).parent / 'data/data.json'
         self.calibration_data = {}
 
@@ -100,6 +100,7 @@ class Calibrator:
 if __name__ == '__main__':
     from pprint import pprint
     clb = Calibrator()
+    clb2 = Calibrator()
     clb.load_calibration()
 
     pprint(clb.get_calibration(CalibrationTarget.COLOR_RED))

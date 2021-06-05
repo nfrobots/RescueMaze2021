@@ -3,6 +3,8 @@ import time
 import serial
 from dataclasses import dataclass
 
+from util.Singleton import Singleton
+
 @dataclass
 class ArduinoData:
     valid: bool
@@ -54,13 +56,7 @@ ARDUINO_DEVSTR_TO_PI_DEVSTR = {
 def arduino_devstr_to_py_devstr(arduino_devstr: str):
     return ARDUINO_DEVSTR_TO_PI_DEVSTR.get(arduino_devstr, None)
 
-class Receiver:
-    def __new__(cls, port='/dev/ttyACM0'):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(Receiver, cls).__new__(cls)
-            cls.instance._init(port)
-        return cls.instance
-
+class Receiver(Singleton):
     def __init__(self, port=None):
         """Receiver is a singelton.
 
@@ -168,5 +164,5 @@ if __name__ == "__main__":
     # rcv.connect()
     print(rcv.get_data_s())
 
-    rcv2 = Receiver(port='asbs')
+    rcv2 = Receiver('asbs')
     print(rcv2.connected)
