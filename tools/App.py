@@ -1,5 +1,7 @@
-from tools import mapDrawer, Client
+from tools import mapDrawer
+from tools.ClientCI import Client
 from RMMLIB4 import Mapping
+from Pi.CalibratorCI import CalibrationTarget
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -12,7 +14,7 @@ import ast
 W_WIDTH = 1280
 W_HEIGHT = 720
 
-REFRESH_RATE = 1000 # milliseconds delay to call refresh functions
+REFRESH_RATE = 100 # milliseconds delay to call refresh functions
 
 
 BACKGROUND_COLOR = '#555'
@@ -99,7 +101,7 @@ class App(Tk):
         self.after(REFRESH_RATE, self.refresh)
 
     def on_window_close(self):
-        Client.close_connection()
+        Client().request_quit()
         self.destroy()
 
 
@@ -118,7 +120,7 @@ class AbstractModule(Frame):
 class Home(AbstractModule):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
-        self.connect_button = Button(self, text="Connect to Robot", cnf=BUTTON_CONFIG, bg='green')
+        self.connect_button = Button(self, text="Connect to Robot", cnf=BUTTON_CONFIG, bg='green', command=Client().connect)
         self.connect_button.pack(expand=1)
 
 
@@ -187,7 +189,7 @@ class SersorViewVisualMode(AbstractModule):
         self.grid_columnconfigure(0, weight=1)
         self.canvas = Canvas(self, bg=BACKGROUND_COLOR, highlightthickness=0)
         self.canvas.grid(column=0, row=0, sticky='nswe')
-        self.t_height = (W_HEIGHT - 100) // len(SENSOR_DATA_FUNCTION())
+        self.t_height = (W_HEIGHT - 100) // 25
 
     def refresh(self):
         self.canvas.delete("all")
@@ -196,9 +198,9 @@ class SersorViewVisualMode(AbstractModule):
         for counter, (key, value) in enumerate(data_iterable):
             value = round(value, 5)
             self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
-            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value*500, counter*self.t_height + 60, fill="#000")
+            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value, counter*self.t_height + 60, fill="#000")
 
-SENSOR_DATA_FUNCTION =  Client.request_data
+SENSOR_DATA_FUNCTION =  Client().request_data
 #SENSOR_DATA_FUNCTION = lambda: {"test": 1}
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
@@ -213,7 +215,7 @@ class LedModule(AbstractModule):
         g.pack()
         b = Entry(self)
         b.pack()
-        Button(self, text="send", command=lambda: Client.request_led_color(r.get(), g.get(), b.get())).pack()
+        Button(self, text="send", command=lambda: Client().request_led((r.get(), g.get(), b.get())).pack())
 
 class CommandModule(AbstractModule):
     def __init__(self, root):
@@ -333,18 +335,21 @@ class CommandModule(AbstractModule):
         command(*args, **kwargs)
 
 def calibrate(value):
-    Client.request_calibration(value)
+    Client().request_calibration()
 
 def calibrate_victim():
-    Client.request_calibration("VICTIM_COLOR")
+    Client().request_calibration(CalibrationTarget.COLOR_RED)
 
 def calibrate_white():
-    Client.request_calibration("WHITE_COLOR")
+    Client().request_calibration(CalibrationTarget.COLOR_WHITE)
 
 def led(r, g, b):
-    Client.request_led_color(r, g, b)
+    Client().request_led(r, g, b)
 
-COMMANDS = [calibrate, calibrate_victim, calibrate_white, led]
+def animation():
+    Client().request_rgb_effect()
+
+COMMANDS = [calibrate, calibrate_victim, calibrate_white, led, animation]
 
 
 MODULES = (Home, MapVisualisation2, SensorView, LedModule, CommandModule)

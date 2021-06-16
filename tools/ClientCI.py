@@ -2,12 +2,13 @@ import json
 import socket
 
 from Pi.CalibratorCI import CalibrationTarget
+from util.Singleton import Singleton
 
-HOST_ADDR = 'localhost'
+HOST_ADDR = '10.42.0.21'
 PORT = 1337
 
-class Client:
-    def __init__(self):
+class Client(Singleton):
+    def _init(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connected = False
 
@@ -18,6 +19,7 @@ class Client:
         try:
             self.socket.connect((HOST_ADDR, PORT))
             self.connected = True
+            print("[INFO] connected successfully")
         except:
             print("[ERROR] could not connect to horst")
 
@@ -51,8 +53,20 @@ class Client:
             return
         self.socket.send("q\n".encode("utf-8"))
 
+    def request_led(self, r, g, b):
+        if not self.connected:
+            print("[WARNING] client tried to request something but was not connected")
+            return
+        self.socket.send(f"l {r} {g} {b}\n".encode("utf-8"))
+
+    def request_rgb_effect(self):
+        if not self.connected:
+            print("[WARNING] client tried to request something but was not connected")
+            return
+        self.socket.send("rgb".encode("utf-8"))
 
 if __name__ == "__main__":
     c = Client()
     c.connect()
-    c.request_calibration(CalibrationTarget.COLOR_SILVER)
+    # c.request_calibration(CalibrationTarget.COLOR_SILVER)
+    print(c.request_led(255, 71, 0)) # (norddetuscher akzent) Oourranje ohne Fluchtfleisch
