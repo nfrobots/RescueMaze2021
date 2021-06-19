@@ -175,7 +175,16 @@ class SensorView(AbstractModule):
 class SersorViewNumberMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, bg="yellow")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.canvas = Canvas(self)
+        self.canvas.grid(row=0, column=0, sticky='nswe')
 
+    def refresh(self):
+        i_data = Client().request_interpreted()
+        print(i_data)
+        color = "#fff" if i_data[1] > i_data[0] else "#f00"
+        self.canvas.create_rectangle(40, 40, 100, 100, fill=color)
 
 class SensorViewGraphMode(AbstractModule):
     def __init__(self, root):
@@ -248,8 +257,8 @@ class CommandModule(AbstractModule):
                 self.parameter_frames[command][parameter_name].grid_columnconfigure(1, weight=1)
 
                 Label(self.parameter_frames[command][parameter_name], LABEL_CONFIG, text=parameter_name).grid(column=0, row=0, sticky='nswe')
-                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name], ENTRY_CONFIG)
-                self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='nswe')
+                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name], bg="#666", bd=0, highlightthickness=1, highlightcolor="#ff4700")
+                self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='w')
 
                 if parameter_info.default != Parameter.empty:
                     if parameter_info.kind == Parameter.KEYWORD_ONLY:
@@ -334,6 +343,10 @@ class CommandModule(AbstractModule):
 
         command(*args, **kwargs)
 
+
+def get_interpreted():
+    Client().request_interpreted()
+
 def calibrate(value):
     Client().request_calibration()
 
@@ -349,10 +362,10 @@ def led(r, g, b):
 def animation():
     Client().request_rgb_effect()
 
-COMMANDS = [calibrate, calibrate_victim, calibrate_white, led, animation]
+COMMANDS = [calibrate, calibrate_victim, calibrate_white, led, animation, get_interpreted]
 
 
-MODULES = (Home, MapVisualisation2, SensorView, LedModule, CommandModule)
+MODULES = (Home, CommandModule, MapVisualisation2, SensorView, LedModule)
 
 if __name__ == '__main__':
     a = App()

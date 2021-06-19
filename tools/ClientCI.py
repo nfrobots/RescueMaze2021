@@ -35,11 +35,15 @@ class Client(Singleton):
             print("[ERROR] could not decode or unserialize data")
 
     def request_interpreted(self):
-        # TODO: implement pls (❤´艸｀❤)
         if not self.connected:
             print("[WARNING] client tried to request something but was not connected")
             return
-        pass
+        self.socket.send("i".encode("utf-8"))
+        raw_data = self.socket.recv(1024).decode("utf-8")
+        data = raw_data.split(" ")
+        return (float(data[0]), float(data[1]))
+    
+
 
     def request_calibration(self, calibration_target: CalibrationTarget):
         if not self.connected:
