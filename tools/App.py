@@ -1,7 +1,9 @@
 from tools import mapDrawer
+from tools.mapCreator import MapCreator
 from tools.ClientCI import Client
 from RMMLIB4 import Mapping
 from Pi.CalibratorCI import CalibrationTarget
+
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -69,7 +71,8 @@ class App(Tk):
         self.modules = {} # holds instances of MODULES
 
         for counter, Module in enumerate(MODULES):
-            self.module_selectors[Module] = Button(self.module_selector_frame, text=Module.__name__, cnf=BUTTON_CONFIG, command=lambda Module=Module: self.enable_module(Module))
+            name = Module.name if hasattr(Module, 'name') else Module.__name__
+            self.module_selectors[Module] = Button(self.module_selector_frame, text=name, cnf=BUTTON_CONFIG, command=lambda Module=Module: self.enable_module(Module))
             self.module_selectors[Module].grid(row=counter, column=0, sticky="nswe")
             self.module_selector_frame.grid_columnconfigure(0, weight=1)
             self.module_selector_frame.grid_rowconfigure(counter, weight=1)
@@ -91,10 +94,12 @@ class App(Tk):
         self.refresh()
 
     def enable_module(self, module):
+        self.active_module.on_deactivation()
         self.module_selectors[type(self.active_module)].configure(bg=BUTTON_COLOR_INACTIVE)
         self.modules[module].tkraise()
         self.active_module = self.modules[module]
         self.module_selectors[module].configure(bg=BUTTON_COLOR_ACTIVE)
+        self.active_module.on_activation()
 
     def refresh(self):
         self.active_module.refresh()
@@ -117,6 +122,12 @@ class AbstractModule(Frame):
         """Is called once after all Modules are initialized"""
         pass
 
+    def on_activation(self):
+        pass
+
+    def on_deactivation(self):
+        pass
+
 class Home(AbstractModule):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
@@ -125,6 +136,7 @@ class Home(AbstractModule):
 
 
 class MapVisualisation2(AbstractModule):
+    name = "Live Map"
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.canvas = Canvas(self, **ENTRY_CONFIG)
@@ -136,6 +148,7 @@ class MapVisualisation2(AbstractModule):
         mapDrawer.draw_map(self.canvas, Mapping.Map.open("./Pi/out/map.json"))
 
 class SensorView(AbstractModule):
+    name = "Sensor View"
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
 
@@ -202,31 +215,17 @@ class SersorViewVisualMode(AbstractModule):
 
     def refresh(self):
         self.canvas.delete("all")
-        data = SENSOR_DATA_FUNCTION()
+        data = Client().request_data()
         data_iterable = data.items()
         for counter, (key, value) in enumerate(data_iterable):
             value = round(value, 5)
             self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
             self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value, counter*self.t_height + 60, fill="#000")
 
-SENSOR_DATA_FUNCTION =  Client().request_data
-#SENSOR_DATA_FUNCTION = lambda: {"test": 1}
-
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
-
-class LedModule(AbstractModule):
-    def __init__(self, root):
-        super().__init__(root, FRAME_CONFIG)
-        r = Entry(self)
-        r.pack()
-        g = Entry(self)
-        g.pack()
-        b = Entry(self)
-        b.pack()
-        Button(self, text="send", command=lambda: Client().request_led((r.get(), g.get(), b.get())).pack())
-
 class CommandModule(AbstractModule):
+    name = "Commands"
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.command_frames = {}
@@ -365,7 +364,34 @@ def animation():
 COMMANDS = [calibrate, calibrate_victim, calibrate_white, led, animation, get_interpreted]
 
 
-MODULES = (Home, CommandModule, MapVisualisation2, SensorView, LedModule)
+class MapCreatorModule(AbstractModule):
+    name = "Map Creator"
+    def __init__(self, root):
+        super().__init__(root)
+        self.root = root
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.map_creator = MapCreator(self)
+        self.map_creator.grid(row=0, column=0, sticky='nswe')
+
+    def refresh(self):
+        self.map_creator.refresh()
+
+    def on_activation(self):
+        self.map_creator.auto_bind(self.root)
+
+    def on_deactivation(self):
+        self.map_creator.auto_unbind(self.root)
+
+
+class SimulationModule(AbstractModule):
+    name = "Emulation"
+    def __init__(self, root):
+        super().__init__(root)
+        
+
+
+MODULES = (Home, CommandModule, MapVisualisation2, SensorView, MapCreatorModule, SimulationModule)
 
 if __name__ == '__main__':
     a = App()

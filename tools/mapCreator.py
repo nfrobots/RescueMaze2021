@@ -8,10 +8,10 @@ import json
 REFRESH_TIME = 100
 
 
-class mapCreator(Tk):
-    def __init__(self):
-        super().__init__()
-        self.geometry("1000x1000")
+class MapCreator(Frame):
+    def __init__(self, root):
+        self.master = root
+        super().__init__(root)
         self.map = Mapping.Map(neighbours=True)
         self.active_x = 0
         self.active_y = 0
@@ -60,9 +60,14 @@ class mapCreator(Tk):
         self.save_file_button.grid(row=0, column=1, sticky='nswe')
 
         self.canvas.update()
-        self._rf()
-        self.bind("<Button-1>", self.on_mouse_click)
-        self.bind("<Key>", self.on_keyboard_press)
+
+    def auto_bind(self, tk):
+        tk.bind("<Button-1>", self.on_mouse_click)
+        tk.bind("<Key>", self.on_keyboard_press)
+
+    def auto_unbind(self, tk):
+        tk.unbind("<Button-1>")
+        tk.unbind("<Key>")
 
     def apply_properties(self):
         for property in Mapping.MAZE_TILE_TEMPLATE:
@@ -85,10 +90,6 @@ class mapCreator(Tk):
         if f == None:
             return
         json.dump(self.map._store(), f)
-
-    def _rf(self):
-        self.refresh()
-        self.after(REFRESH_TIME, self._rf)
 
     def refresh(self):
         mapDrawer.draw_map(self.canvas, self.map)
@@ -121,5 +122,16 @@ class mapCreator(Tk):
 
 
 if __name__ == "__main__":
-    main = mapCreator()
-    main.mainloop()
+    root = Tk()
+    root.geometry("1000x1000")
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)    
+    main = MapCreator(root)
+    main.auto_bind(root)
+    main.grid(column=0, row=0, sticky='nswe')
+
+    def _rf():
+        main.refresh()
+        root.after(REFRESH_TIME, _rf)
+    _rf()
+    root.mainloop()
