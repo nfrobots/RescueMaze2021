@@ -4,6 +4,7 @@ from PIL import ImageTk, Image
 
 PAD = 10
 TILE_DISTANCE = 10
+D = TILE_DISTANCE // 2
 
 LINE_CONFIG = {
     "width": 4
@@ -49,7 +50,7 @@ def draw_map(canvas, map):
     canvas.delete("all")
 
     tile_size = calculate_tile_size(canvas, map)
-    D = TILE_DISTANCE // 2
+
     image_size = tile_size - PAD
 
     images = load_images(image_size)
@@ -81,10 +82,16 @@ def draw_map(canvas, map):
 
 def highlight_tile(canvas, map, x, y):
     tile_size = calculate_tile_size(canvas, map)
-    D = TILE_DISTANCE // 2
     return canvas.create_rectangle(x*tile_size + PAD + D, y*tile_size + PAD + D, (x+1)*tile_size + PAD - D, (y+1)*tile_size + PAD - D, fill="#ff69b4", width=0)
 
-def show_map(map):
+def draw_path(canvas, map, path):
+    tile_size = calculate_tile_size(canvas, map)
+    for i in range(len(path) - 1):
+        canvas.create_line((path[i][0]+0.5)*tile_size + PAD, (path[i][1]+0.5)*tile_size + PAD, (path[i+1][0]+0.5)*tile_size + PAD, (path[i+1][1]+0.5)*tile_size + PAD, fill="red", width=5)
+
+
+if __name__ == "__main__":
+    map = Mapping.Map.open("C:\\Robo\\NFR\\Maze2021\\Pi\\out\\map.json")
     root = Tk()
     root.geometry("600x600")
 
@@ -93,15 +100,12 @@ def show_map(map):
     canvas = Canvas(root)
     canvas.grid(row=0, column=0, sticky='nswe')
     root.update()
-    highlight_tile(canvas, map, 1, 1)
 
     def updater():
         draw_map(canvas, map)
+        draw_path(canvas, map, map.findPath(0, 0, map.sizeX - 1, map.sizeY - 1))
         root.after(1000, updater)
 
-    root.after(1000, updater)
+    updater()
 
     root.mainloop()
-
-if __name__ == "__main__":
-    show_map(Mapping.Map.open("./Pi/out/testmap3.json"))
