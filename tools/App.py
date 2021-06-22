@@ -1,5 +1,6 @@
 from tools import mapDrawer
 from tools.mapCreator import MapCreator
+from tools.LogReaderCI import LogReader
 from tools.ClientCI import Client
 from RMMLIB4 import Mapping
 from Pi.CalibratorCI import CalibrationTarget
@@ -384,14 +385,18 @@ class MapCreatorModule(AbstractModule):
         self.map_creator.auto_unbind(self.root)
 
 
-class SimulationModule(AbstractModule):
-    name = "Emulation"
+class LogReaderModule(AbstractModule):
+    name = "Log Reader"
     def __init__(self, root):
         super().__init__(root)
-        
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.log_reader = LogReader(self)
+        self.log_reader.grid(row=0, column=0, sticky='nswe')
 
 
-MODULES = (Home, CommandModule, MapVisualisation2, SensorView, MapCreatorModule, SimulationModule)
+
+MODULES = (Home, CommandModule, MapVisualisation2, SensorView, MapCreatorModule, LogReaderModule)
 
 if __name__ == '__main__':
     a = App()
