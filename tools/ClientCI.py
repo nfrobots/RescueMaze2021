@@ -26,7 +26,7 @@ class Client(Singleton):
     def request_data(self):
         if not self.connected:
             print("[WARNING] client tried to request something but was not connected")
-            return
+            return {"error": -1}
         self.socket.send("d\n".encode("utf-8"))
         json_bytes = self.socket.recv(1024)
         try:

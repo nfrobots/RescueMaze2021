@@ -63,7 +63,7 @@ class MapCreator(Frame):
 
     def auto_bind(self, tk):
         tk.bind("<Button-1>", self.on_mouse_click)
-        tk.bind("<Key>", self.on_keyboard_press)
+        tk.bind("<Key>", self.on_key_press)
 
     def auto_unbind(self, tk):
         tk.unbind("<Button-1>")
@@ -102,7 +102,7 @@ class MapCreator(Frame):
             print(self.active_x, self.active_y)
             self.load_properties(self.active_x, self.active_y)
 
-    def on_keyboard_press(self, event):
+    def on_key_press(self, event):
         var = None
         if event.char == "8":
             var = self.checkbutton_values[Constants.Direction.NORTH]

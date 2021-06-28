@@ -58,6 +58,9 @@ class App(Tk):
         self.title("Roboti App")
 
         self.protocol("WM_DELETE_WINDOW", self.on_window_close)
+        self.key_bindings = {}
+        self.bind("<Key>", self.on_key_press)
+        self.bind("<Button-1>", self.on_mouse_click)
 
         self.grid_rowconfigure(0, weight=3) # make module frame expand
         self.grid_columnconfigure(1, weight=3)
@@ -77,20 +80,21 @@ class App(Tk):
             self.module_selectors[Module].grid(row=counter, column=0, sticky="nswe")
             self.module_selector_frame.grid_columnconfigure(0, weight=1)
             self.module_selector_frame.grid_rowconfigure(counter, weight=1)
-
             self.modules[Module] = Module(self)
             self.modules[Module].grid(row=0, column=1, sticky='nswe')
 
+            self.key_bindings[counter + 49] = lambda m=Module: self.enable_module(m) # key '1' has keycode 49
+
         self.active_module = self.modules[Home]
         self.enable_module(Home)
+
+        self.module_selectors["QUIT_BUTTON"] = Button(self.module_selector_frame, text="QUIT", cnf=BUTTON_CONFIG, command=self.on_window_close)
+        self.module_selectors["QUIT_BUTTON"].grid(row=len(MODULES), column=0, sticky="nswe")
 
         self.update()
 
         for module in self.modules:
             self.modules[module].post_init()
-
-        self.module_selectors["QUIT_BUTTON"] = Button(self.module_selector_frame, text="QUIT", cnf=BUTTON_CONFIG, command=self.on_window_close)
-        self.module_selectors["QUIT_BUTTON"].grid(row=len(MODULES), column=0, sticky="nswe")
 
         self.refresh()
 
@@ -110,6 +114,12 @@ class App(Tk):
         Client().request_quit()
         self.destroy()
 
+    def on_key_press(self, event):
+        self.key_bindings.get(event.keycode, lambda: None)()
+        self.active_module.on_key_press(event)
+
+    def on_mouse_click(self, event):
+        self.active_module.on_mouse_click(event)
 
 class AbstractModule(Frame):
     def __init__(self, root, *args, **kwargs):
@@ -127,6 +137,12 @@ class AbstractModule(Frame):
         pass
 
     def on_deactivation(self):
+        pass
+
+    def on_key_press(self, event):
+        pass
+
+    def on_mouse_click(self, event):
         pass
 
 class Home(AbstractModule):
@@ -378,11 +394,11 @@ class MapCreatorModule(AbstractModule):
     def refresh(self):
         self.map_creator.refresh()
 
-    def on_activation(self):
-        self.map_creator.auto_bind(self.root)
+    def on_key_press(self, event):
+        self.map_creator.on_key_press(event)
 
-    def on_deactivation(self):
-        self.map_creator.auto_unbind(self.root)
+    def on_mouse_click(self, event):
+        self.map_creator.on_mouse_click(event)
 
 
 class LogReaderModule(AbstractModule):
