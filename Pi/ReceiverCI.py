@@ -137,7 +137,7 @@ class Receiver(Singleton):
             ir_6                = data_dict["IR6"],
             ir_7                = data_dict["IR7"],
             gyro_x              = data_dict["GYX"],
-            gyro_y              = data_dict["GYZ"],
+            gyro_y              = data_dict["GYY"],
             gyro_z              = data_dict["GYZ"],
             color_red           = data_dict["RED"],
             color_green         = data_dict["GRE"],

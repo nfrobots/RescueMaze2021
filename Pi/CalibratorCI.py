@@ -43,46 +43,46 @@ class Calibrator(Singleton):
             json.dump(self.calibration_data, f)
         
     def calibrate(self, target: CalibrationTarget):
-        # sensor_data = Receiver().get_data_s()
-        sensor_data = ArduinoData(valid=False)
+        sensor_data = Receiver().get_data_s()
+        # sensor_data = ArduinoData(valid=False)
         
         if target in (CalibrationTarget.COLOR_RED, CalibrationTarget.COLOR_WHITE,
                     CalibrationTarget.COLOR_SILVER, CalibrationTarget.COLOR_BLACK):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "RED": sensor_data.color_red,
                 "GRE": sensor_data.color_green,
                 "BLU": sensor_data.color_blue,
                 "ALP": sensor_data.color_alpha
             }
         elif target in (CalibrationTarget.WALL_LEFT, CalibrationTarget.NO_WALL_LEFT):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "IR0": sensor_data.ir_0,
                 "IR1": sensor_data.ir_1,
                 "USL": sensor_data.ultrasonic_left
             }
         elif target in (CalibrationTarget.WALL_FRONT, CalibrationTarget.NO_WALL_FRONT):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "IR2": sensor_data.ir_2,
                 "IR3": sensor_data.ir_3,
                 "LIR": sensor_data.long_distance_ir
             }
         elif target in (CalibrationTarget.WALL_RIGHT, CalibrationTarget.NO_WALL_RIGHT):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "IR4": sensor_data.ir_4,
                 "IR5": sensor_data.ir_5,
                 "USR": sensor_data.ultrasonic_right
             }
         elif target in (CalibrationTarget.WALL_BACK, CalibrationTarget.NO_WALL_BACK):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "IR6": sensor_data.ir_6,
                 "IR7": sensor_data.ir_7
             }
         elif target in (CalibrationTarget.WALL_2ND_FRONT_LD, CalibrationTarget.NO_WALL_2ND_FRONT_LD):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "LIR": sensor_data.long_distance_ir
             }
         elif target in (CalibrationTarget.GYRO_FLAT, CalibrationTarget.GYRO_INCLINE):
-            self.calibration_data[target] = {
+            self.calibration_data[target.value] = {
                 "GYX": sensor_data.gyro_x,
                 "GYY": sensor_data.gyro_y,
                 "GYZ": sensor_data.gyro_z
@@ -92,7 +92,7 @@ class Calibrator(Singleton):
 
     def get_calibration(self, target: CalibrationTarget) -> ArduinoData:
         data = ArduinoData(valid=True)
-        for key in self.calibration_data[target]:
+        for key in self.calibration_data[target.value]:
             setattr(data, arduino_devstr_to_py_devstr(key), self.calibration_data[target][key])
 
         return data
