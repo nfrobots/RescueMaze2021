@@ -39,6 +39,14 @@ class Position:
         """
         return "<Position: x={}, y={}>".format(self.x, self.y)
 
+    def __getitem__(self, key):
+        if key == 0:
+            return self.x
+        elif key == 1:
+            return self.y
+        else:
+            raise KeyError(f"cannot get element {key} of Position")
+
 def distance(a, b):
     """Calculates manhattan distance between two positons
 
@@ -194,6 +202,10 @@ class Map:
             y (int): y coordinate
             value (MazeTile): MazeTile to set at specified posiotion
             expand (bool): weather to expand
+
+        Returns:
+            tuple of the position where the tile was set e.g. (2, 4) or
+            None if the tile could not be set
         """
         prevOffsetX = self.offsetX
         prevOffsetY = self.offsetY
@@ -222,9 +234,11 @@ class Map:
         x = x + self.offsetX - prevOffsetX
         y = y + self.offsetY - prevOffsetY
 
-        assert(x >= 0 and y >= 0)
+        if(x >= 0 and x < self.sizeX and y >= 0 and y < self.sizeY):
+            self.map[y, x] = value
+            return (x, y)
 
-        self.map[y, x] = value
+        return None
 
     def setAtRobot(self, tile: MazeTile):
         self.set(self.robot.x, self.robot.y, tile)
@@ -243,9 +257,10 @@ class Map:
         if tile == None:
             tile = MazeTile()
         tile[attribute] = value
-        self.set(x, y, tile, expand)
-        if isinstance(attribute, Constants.Direction) and self.apply_to_neighbours and _neighbours == None:
-            self._setNeighbourWall(x, y, attribute, value)
+        tilePosition = self.set(x, y, tile, expand)
+        if isinstance(attribute, Constants.Direction) and self.apply_to_neighbours and _neighbours == None \
+            and tilePosition:
+            self._setNeighbourWall(tilePosition[0], tilePosition[1], attribute, value)
 
     def _setNeighbourWall(self, x, y, direction, value):
         offset = self.directionToOffset(direction)
@@ -500,6 +515,7 @@ class Map:
                     newMap.map[y, x]._data[eval(key)] = value
         return newMap
 
+    @Logger.iLog
     def findPath(self, startX, startY, endX, endY):
         class _ANode:
             def __init__(self, x, y, endX, endY, parent=None):

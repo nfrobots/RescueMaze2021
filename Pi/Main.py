@@ -46,7 +46,6 @@ while True:
         drive_succes = Mover.driveRobot(driveDirection)
         if drive_succes == True:
             map.driveRobot(driveDirection)
-            break
         if drive_succes == Constants.BLACK: # no succes due to black tile
             map.setAttributeAtRobotOffset(driveDirection, Constants.BLACK, True)
             map.setAttributeAtRobotOffset(driveDirection, Constants.KNOWN, True)

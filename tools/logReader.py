@@ -4,6 +4,7 @@ from tools import mapDrawer
 
 import tkinter
 from pathlib import Path
+from time import sleep
 
 with open(Path(__file__).parent.parent / "Pi/out/log.txt") as f:
     instructions = f.read().split('\n')
@@ -47,8 +48,10 @@ def step():
     function = fmtInstruction[0]
     rawArgs = fmtInstruction[1].replace(")", "").split(", ")[1:]
     args = [evalArg(a) for a in rawArgs]
-    getattr(m, function)(*args)
+    ret = getattr(m, function)(*args)
     mapDrawer.draw_map(cv, m)
+    if function == "findPath":
+        mapDrawer.draw_path(cv, m, ret)
 
 auto_step_enabled = False
 
@@ -59,7 +62,7 @@ def auto_step_enable():
 def auto_step():
     if auto_step_enabled:
         step()
-    root.after(100, auto_step)
+    root.after(200, auto_step)
 
 button = tkinter.Button(frm, width=10, height=2, bg="green", border="0", command=auto_step_enable)
 button.pack()

@@ -1,5 +1,10 @@
-from tools import mapDrawer, Client
+from tools import mapDrawer
+from tools.mapCreator import MapCreator
+from tools.LogReaderCI import LogReader
+from tools.ClientCI import Client
 from RMMLIB4 import Mapping
+from Pi.CalibratorCI import CalibrationTarget
+
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
 from pathlib import Path
@@ -12,7 +17,7 @@ import ast
 W_WIDTH = 1280
 W_HEIGHT = 720
 
-REFRESH_RATE = 1000 # milliseconds delay to call refresh functions
+REFRESH_RATE = 100 # milliseconds delay to call refresh functions
 
 
 BACKGROUND_COLOR = '#555'
@@ -53,6 +58,9 @@ class App(Tk):
         self.title("Roboti App")
 
         self.protocol("WM_DELETE_WINDOW", self.on_window_close)
+        self.key_bindings = {}
+        self.bind("<Key>", self.on_key_press)
+        self.bind("<Button-1>", self.on_mouse_click)
 
         self.grid_rowconfigure(0, weight=3) # make module frame expand
         self.grid_columnconfigure(1, weight=3)
@@ -67,41 +75,51 @@ class App(Tk):
         self.modules = {} # holds instances of MODULES
 
         for counter, Module in enumerate(MODULES):
-            self.module_selectors[Module] = Button(self.module_selector_frame, text=Module.__name__, cnf=BUTTON_CONFIG, command=lambda Module=Module: self.enable_module(Module))
+            name = Module.name if hasattr(Module, 'name') else Module.__name__
+            self.module_selectors[Module] = Button(self.module_selector_frame, text=name, cnf=BUTTON_CONFIG, command=lambda Module=Module: self.enable_module(Module))
             self.module_selectors[Module].grid(row=counter, column=0, sticky="nswe")
             self.module_selector_frame.grid_columnconfigure(0, weight=1)
             self.module_selector_frame.grid_rowconfigure(counter, weight=1)
-
             self.modules[Module] = Module(self)
             self.modules[Module].grid(row=0, column=1, sticky='nswe')
 
+            self.key_bindings[counter + 49] = lambda m=Module: self.enable_module(m) # key '1' has keycode 49
+
         self.active_module = self.modules[Home]
         self.enable_module(Home)
+
+        self.module_selectors["QUIT_BUTTON"] = Button(self.module_selector_frame, text="QUIT", cnf=BUTTON_CONFIG, command=self.on_window_close)
+        self.module_selectors["QUIT_BUTTON"].grid(row=len(MODULES), column=0, sticky="nswe")
 
         self.update()
 
         for module in self.modules:
             self.modules[module].post_init()
 
-        self.module_selectors["QUIT_BUTTON"] = Button(self.module_selector_frame, text="QUIT", cnf=BUTTON_CONFIG, command=self.on_window_close)
-        self.module_selectors["QUIT_BUTTON"].grid(row=len(MODULES), column=0, sticky="nswe")
-
         self.refresh()
 
     def enable_module(self, module):
+        self.active_module.on_deactivation()
         self.module_selectors[type(self.active_module)].configure(bg=BUTTON_COLOR_INACTIVE)
         self.modules[module].tkraise()
         self.active_module = self.modules[module]
         self.module_selectors[module].configure(bg=BUTTON_COLOR_ACTIVE)
+        self.active_module.on_activation()
 
     def refresh(self):
         self.active_module.refresh()
         self.after(REFRESH_RATE, self.refresh)
 
     def on_window_close(self):
-        Client.close_connection()
+        Client().request_quit()
         self.destroy()
 
+    def on_key_press(self, event):
+        self.key_bindings.get(event.keycode, lambda: None)()
+        self.active_module.on_key_press(event)
+
+    def on_mouse_click(self, event):
+        self.active_module.on_mouse_click(event)
 
 class AbstractModule(Frame):
     def __init__(self, root, *args, **kwargs):
@@ -115,14 +133,27 @@ class AbstractModule(Frame):
         """Is called once after all Modules are initialized"""
         pass
 
+    def on_activation(self):
+        pass
+
+    def on_deactivation(self):
+        pass
+
+    def on_key_press(self, event):
+        pass
+
+    def on_mouse_click(self, event):
+        pass
+
 class Home(AbstractModule):
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
-        self.connect_button = Button(self, text="Connect to Robot", cnf=BUTTON_CONFIG, bg='green')
+        self.connect_button = Button(self, text="Connect to Robot", cnf=BUTTON_CONFIG, bg='green', command=Client().connect)
         self.connect_button.pack(expand=1)
 
 
 class MapVisualisation2(AbstractModule):
+    name = "Live Map"
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.canvas = Canvas(self, **ENTRY_CONFIG)
@@ -134,6 +165,7 @@ class MapVisualisation2(AbstractModule):
         mapDrawer.draw_map(self.canvas, Mapping.Map.open("./Pi/out/map.json"))
 
 class SensorView(AbstractModule):
+    name = "Sensor View"
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
 
@@ -173,7 +205,16 @@ class SensorView(AbstractModule):
 class SersorViewNumberMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, bg="yellow")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.canvas = Canvas(self)
+        self.canvas.grid(row=0, column=0, sticky='nswe')
 
+    def refresh(self):
+        i_data = Client().request_interpreted()
+        print(i_data)
+        color = "#fff" if i_data[1] > i_data[0] else "#f00"
+        self.canvas.create_rectangle(40, 40, 100, 100, fill=color)
 
 class SensorViewGraphMode(AbstractModule):
     def __init__(self, root):
@@ -187,35 +228,21 @@ class SersorViewVisualMode(AbstractModule):
         self.grid_columnconfigure(0, weight=1)
         self.canvas = Canvas(self, bg=BACKGROUND_COLOR, highlightthickness=0)
         self.canvas.grid(column=0, row=0, sticky='nswe')
-        self.t_height = (W_HEIGHT - 100) // len(SENSOR_DATA_FUNCTION())
+        self.t_height = (W_HEIGHT - 100) // 25
 
     def refresh(self):
         self.canvas.delete("all")
-        data = SENSOR_DATA_FUNCTION()
+        data = Client().request_data()
         data_iterable = data.items()
         for counter, (key, value) in enumerate(data_iterable):
             value = round(value, 5)
             self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
-            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value*500, counter*self.t_height + 60, fill="#000")
-
-SENSOR_DATA_FUNCTION =  Client.request_data
-#SENSOR_DATA_FUNCTION = lambda: {"test": 1}
+            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value, counter*self.t_height + 60, fill="#000")
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
-
-class LedModule(AbstractModule):
-    def __init__(self, root):
-        super().__init__(root, FRAME_CONFIG)
-        r = Entry(self)
-        r.pack()
-        g = Entry(self)
-        g.pack()
-        b = Entry(self)
-        b.pack()
-        Button(self, text="send", command=lambda: Client.request_led_color(r.get(), g.get(), b.get())).pack()
-
 class CommandModule(AbstractModule):
+    name = "Commands"
     def __init__(self, root):
         super().__init__(root, FRAME_CONFIG)
         self.command_frames = {}
@@ -246,8 +273,8 @@ class CommandModule(AbstractModule):
                 self.parameter_frames[command][parameter_name].grid_columnconfigure(1, weight=1)
 
                 Label(self.parameter_frames[command][parameter_name], LABEL_CONFIG, text=parameter_name).grid(column=0, row=0, sticky='nswe')
-                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name], ENTRY_CONFIG)
-                self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='nswe')
+                self.parameter_entries[command][parameter_name] = Entry(self.parameter_frames[command][parameter_name], bg="#666", bd=0, highlightthickness=1, highlightcolor="#ff4700")
+                self.parameter_entries[command][parameter_name].grid(column=1, row=0, sticky='w')
 
                 if parameter_info.default != Parameter.empty:
                     if parameter_info.kind == Parameter.KEYWORD_ONLY:
@@ -332,22 +359,60 @@ class CommandModule(AbstractModule):
 
         command(*args, **kwargs)
 
+
+def get_interpreted():
+    Client().request_interpreted()
+
 def calibrate(value):
-    Client.request_calibration(value)
+    Client().request_calibration()
 
 def calibrate_victim():
-    Client.request_calibration("VICTIM_COLOR")
+    Client().request_calibration(CalibrationTarget.COLOR_RED)
 
 def calibrate_white():
-    Client.request_calibration("WHITE_COLOR")
+    Client().request_calibration(CalibrationTarget.COLOR_WHITE)
 
 def led(r, g, b):
-    Client.request_led_color(r, g, b)
+    Client().request_led(r, g, b)
 
-COMMANDS = [calibrate, calibrate_victim, calibrate_white, led]
+def animation():
+    Client().request_rgb_effect()
+
+COMMANDS = [calibrate, calibrate_victim, calibrate_white, led, animation, get_interpreted]
 
 
-MODULES = (Home, MapVisualisation2, SensorView, LedModule, CommandModule)
+class MapCreatorModule(AbstractModule):
+    name = "Map Creator"
+    def __init__(self, root):
+        super().__init__(root)
+        self.root = root
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.map_creator = MapCreator(self)
+        self.map_creator.grid(row=0, column=0, sticky='nswe')
+
+    def refresh(self):
+        self.map_creator.refresh()
+
+    def on_key_press(self, event):
+        self.map_creator.on_key_press(event)
+
+    def on_mouse_click(self, event):
+        self.map_creator.on_mouse_click(event)
+
+
+class LogReaderModule(AbstractModule):
+    name = "Log Reader"
+    def __init__(self, root):
+        super().__init__(root)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.log_reader = LogReader(self)
+        self.log_reader.grid(row=0, column=0, sticky='nswe')
+
+
+
+MODULES = (Home, CommandModule, MapVisualisation2, SensorView, MapCreatorModule, LogReaderModule)
 
 if __name__ == '__main__':
     a = App()
