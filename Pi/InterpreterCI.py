@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from RMMLIB4 import Constants
-from RMMLIB4.Constants import RelDirection
-from math import sqrt, tanh
+from math import sqrt
 from typing import List
 
 from Pi.CalibratorCI import Calibrator, CalibrationTarget
 from Pi.ReceiverCI import ArduinoData, Receiver
 from RMMLIB4.Mapping import MazeTile
+from RMMLIB4 import Constants
+from RMMLIB4.Constants import RelDirection, Direction
+from RMMLIB4 import Mapping
 from util.Singleton import Singleton
 
 
@@ -29,6 +30,18 @@ class InterpretedData:
         Constants.RAMP: False,
         Constants.BLACK: False
     }
+
+    def to_maze_tile(self, robot: Mapping._Vctr):
+        tile = MazeTile()
+
+        for key in (Constants.VICTIM, Constants.BLACK, Constants.RAMP):
+            tile._data[key] = self._data[key]
+
+        for relDirection in RelDirection:
+            direction = Constants.Direction((robot.direction.value + relDirection.value) % 4)
+            tile._data[direction] = self._data[relDirection]
+
+        return tile
     
 
 class Interpreter(Singleton):

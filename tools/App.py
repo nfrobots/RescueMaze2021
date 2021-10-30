@@ -1,3 +1,4 @@
+from Pi.InterpreterCI import InterpretedData
 from tools import mapDrawer
 from tools.mapCreator import MapCreator
 from tools.LogReaderCI import LogReader
@@ -7,7 +8,7 @@ from Pi.CalibratorCI import CalibrationTarget
 
 
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, END
-from pathlib import Path
+from pathlib import Path    
 import json
 import inspect
 from inspect import Parameter
@@ -83,7 +84,7 @@ class App(Tk):
             self.modules[Module] = Module(self)
             self.modules[Module].grid(row=0, column=1, sticky='nswe')
 
-            self.key_bindings[counter + 49] = lambda m=Module: self.enable_module(m) # key '1' has keycode 49
+            self.key_bindings[counter + 10] = lambda m=Module: self.enable_module(m) # key '1' has keycode 49
 
         self.active_module = self.modules[Home]
         self.enable_module(Home)
@@ -213,12 +214,25 @@ class SersorViewNumberMode(AbstractModule):
     def refresh(self):
         i_data = Client().request_interpreted()
         print(i_data)
-        color = "#fff" if i_data[1] > i_data[0] else "#f00"
+        # color = "#fff" if i_data[] > i_data[0] else "#f00"
+        color = "#fff"
         self.canvas.create_rectangle(40, 40, 100, 100, fill=color)
 
 class SensorViewGraphMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, bg="green")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.canvas = Canvas(self)
+        self.canvas.grid(row=0, column=0, sticky="nswe")
+        self.map = Mapping.Map()
+
+
+    
+    def refresh(self):
+        i_data: InterpretedData = Client().request_interpreted()
+        self.map.set(0, 0, i_data.to_maze_tile(Mapping._Vctr()))
+        mapDrawer.draw_map(self.canvas, self.map, width=7)
 
 
 class SersorViewVisualMode(AbstractModule):
@@ -364,7 +378,7 @@ def get_interpreted():
     Client().request_interpreted()
 
 def calibrate(value):
-    Client().request_calibration()
+    Client().request_calibration(value)
 
 def calibrate_victim():
     Client().request_calibration(CalibrationTarget.COLOR_RED)

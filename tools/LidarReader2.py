@@ -2,10 +2,10 @@ import serial
 from collections import deque
 import numpy as np
 import time
-from tkinter import *
+from tkinter import Tk, Canvas
 
 class LidarReader():
-    def __init__(self, port="COM3", baud=9600, angle_correction=75):
+    def __init__(self, port="/dev/ttyACM0", baud=9600, angle_correction=75):
         self.angle_correction = angle_correction
 
         self._ser = serial.Serial(port, baud)
@@ -66,15 +66,15 @@ class LidarReader():
 
 
 POINT_SIZE = 5
-CENTER = (500, 500)
-RB_SCALING = 300
+CENTER = (670, 720/2)
+RB_SCALING = 500
 
 def draw_data(canvas, data):
     canvas.delete("all")
     for i in range(len(data)):
         x = data[i][2] + CENTER[0]
         y = data[i][3] + CENTER[1]
-        blueness = max(0, int(np.tanh(data[i][3] / RB_SCALING) * 15))
+        blueness = max(0, int(np.tanh(data[i][1] / RB_SCALING) * 15))
         color = "#{}0{}".format(hex(15-blueness)[2], hex(blueness)[2])
         # canvas.create_line(data[i][0] + CENTER[0], data[i][1] + CENTER[1], data[(i+1)%len(data)][0] + CENTER[0], data[(i+1)%len(data)][1] + CENTER[1], width=4, fill="#666")
         canvas.create_oval(x - POINT_SIZE, y - POINT_SIZE, x + POINT_SIZE, y + POINT_SIZE, fill=color)
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     lr = LidarReader()
 
     root = Tk()
-    root.geometry("1000x1000")
+    root.geometry("1000x720")
     root.grid_columnconfigure(0, weight=1)
     root.grid_rowconfigure(0, weight=1)
     canvas = Canvas(root, bg="#ddd")
@@ -94,8 +94,9 @@ if __name__ == "__main__":
 
     def loop():
         lr.update()
-        if lr.full_ready:
-            draw_data(canvas, lr.get_full())
+        #if lr.full_ready:
+        #    draw_data(canvas, lr.get_full())
+        draw_data(canvas, lr.get_data())
         root.after(10, loop)
 
     loop()

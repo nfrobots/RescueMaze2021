@@ -1,3 +1,4 @@
+from os import linesep
 from tkinter import Tk, Canvas, Label
 from RMMLIB4 import Mapping, Constants
 from PIL import ImageTk, Image
@@ -40,13 +41,16 @@ def calculate_tile_size(canvas, map):
     tile_size = min((canvas_height - 2*PAD) // map.sizeY, (canvas_width - 2*PAD) // map.sizeX)
     return tile_size
 
-def draw_map(canvas, map):
+def draw_map(canvas, map, width=None):
     """draw a map on given tk canvas
 
     Args:
         canvas (tkinter.Canvas): canvas to draw the map on
         map (RMMLIB4.Mapping.Map): map to draw
     """
+    if width != None:
+        LINE_CONFIG["width"] = width
+
     canvas.delete("all")
 
     tile_size = calculate_tile_size(canvas, map)
