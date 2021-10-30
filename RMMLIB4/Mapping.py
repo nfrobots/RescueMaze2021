@@ -62,7 +62,7 @@ def distance(a, b):
 
 class _Vctr:
     """Internal class used to express position and rotation"""
-    def __init__(self, x, y, rotation):
+    def __init__(self, x=0, y=0, rotation=Direction.NORTH):
         """initzializes values
 
         Args:
@@ -194,7 +194,7 @@ class Map:
         return self.get(x + offset[0], y + offset[1])
 
     @Logger.iLog
-    def set(self, x, y, value, expand=True):
+    def set(self, x: int, y: int, value: MazeTile, expand=True):
         """[[LOGGED]] Sets MazeTile at specified position, may expands until position reached. Does not set neighbours
 
         Args:

@@ -1,7 +1,7 @@
 from RMMLIB4 import Mapping, Constants, Logger
 import Pi.Interpreter
 
-enviroment = Mapping.Map.open('./Pi/out/testmap2.json')
+enviroment = Mapping.Map.open('./Pi/out/map.json')
 
 INTERPREDED_DATA_TEMPLATE = Pi.Interpreter.INTERPREDED_DATA_TEMPLATE
 

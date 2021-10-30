@@ -1,8 +1,12 @@
+from RMMLIB4.Constants import RelDirection, VICTIM
+from Pi.InterpreterCI import InterpretedData
 import json
 import socket
 
 from Pi.CalibratorCI import CalibrationTarget
 from util.Singleton import Singleton
+from RMMLIB4 import Mapping
+from RMMLIB4 import Constants
 
 HOST_ADDR = '10.42.0.21'
 PORT = 1337
@@ -17,7 +21,7 @@ def _requires_connection(default_return=None):
             if not args[0].connected:
                 print(f"[WARNING] client tried to run '{func.__name__}' but was not connected")
                 return default_return
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
     return decorator
 
@@ -51,8 +55,27 @@ class Client(Singleton):
     def request_interpreted(self):
         self.socket.send("i".encode("utf-8"))
         raw_data = self.socket.recv(1024).decode("utf-8")
-        data = raw_data.split(" ")
-        return (float(data[0]), float(data[1]))
+        data_dict = json.loads(raw_data)
+
+        i_data = InterpretedData()
+
+        for key in data_dict:
+            if key == "RelDirection.FORWARD":
+                i_data._data[RelDirection.FORWARD] = data_dict[key]
+            elif key == "RelDirection.RIGHT":
+                i_data._data[RelDirection.RIGHT] = data_dict[key]
+            elif key == "RelDirection.BACKWARD":
+                i_data._data[RelDirection.BACKWARD] = data_dict[key]
+            elif key == "RelDirection.LEFT":
+                i_data._data[RelDirection.LEFT] = data_dict[key]
+            elif key == "VICTIM":
+                i_data._data[Constants.VICTIM] = data_dict[key]
+            elif key == "RAMP":
+                i_data._data[Constants.RAMP] = data_dict[key]
+            elif key == "BLACK":
+                i_data._data[Constants.BLACK] = data_dict[key]
+
+        return i_data
 
     @_requires_connection()
     def request_calibration(self, calibration_target: CalibrationTarget):
@@ -69,6 +92,12 @@ class Client(Singleton):
     @_requires_connection()
     def request_rgb_effect(self):
         self.socket.send("rgb".encode("utf-8"))
+
+    @_requires_connection()
+    def request_map(self):
+        self.socket.send("map".encode("utf-8"))
+        resp = self.socket.recv(1024)
+        return Mapping.Map._restore(json.loads(resp.decode("utf-8")))
 
 if __name__ == "__main__":
     c: Client = Client()

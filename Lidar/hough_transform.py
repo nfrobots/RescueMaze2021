@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from skimage.feature import peak_local_max
-from scipy import ndimage
+# from scipy import ndimage
 
 from tools import LidarReader2
 
@@ -36,7 +36,7 @@ s5.set(MIN_D*10)
 
 
 
-figure = plt.figure(figsize=(18, 9))
+figure = plt.figure(figsize=(9, 4))
 chart_type = FigureCanvasTkAgg(figure, root)
 chart_type.get_tk_widget().grid(column=0, row=0, sticky="nswe")
 
