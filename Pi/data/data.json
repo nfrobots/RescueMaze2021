@@ -1,16 +1,22 @@
 {
-    "VICTIM_COLOR": {
-        "red": 17,
-        "green": 70,
-        "blue": 61,
-        "alpha": 11
-    },
-    "WHITE_COLOR": {
-        "red": 12,
-        "green": 13,
-        "blue": 11,
-        "alpha": 4
-    },
-    "BLACK_GREYSCALE": 1450,
-    "WHITE_GREYSCALE": 550
+    "WALL_FRONT": [
+        {
+            "IR_2": 0,
+            "IR_3": 0
+        },
+        {
+            "IR_2": 4,
+            "IR_3": 2
+        },
+        {
+            "IR_2": -4,
+            "IR_3": -2
+        }
+    ],
+    "NO_WALL_FRONT": [
+        {
+            "IR_2": 100,
+            "IR_3": 100
+        }
+    ]
 }

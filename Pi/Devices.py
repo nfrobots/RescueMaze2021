@@ -1,10 +1,18 @@
-import gpiozero
-from adafruit_ws2801 import WS2801
-import board
+from enum import Enum
 
-button_left = gpiozero.Button(26)
-button_right = gpiozero.Button(19)
 
-NUM_LEDS = 12
+class Sensors(str, Enum):
+    IR_0 = "IR_0"
+    IR_1 = "IR_1"
+    IR_2 = "IR_2"
+    IR_3 = "IR_3"
+    IR_4 = "IR_4"
+    IR_5 = "IR_5"
+    IR_6 = "IR_6"
+    IR_7 = "IR_7"
 
-leds = WS2801(board.SCLK, board.MOSI, NUM_LEDS, brightness=1)
+    gyro = "gyro"
+    greyscale = "greyscale"
+
+    temp_left = "temp_left"
+    temp_right = "temp_right"

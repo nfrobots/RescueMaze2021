@@ -4,35 +4,74 @@ from pathlib import Path
 
 from Pi.ReceiverCI import Receiver, ArduinoData, arduino_devstr_to_py_devstr
 from util.Singleton import Singleton
+from Devices import Sensors
+
+from typing import Dict, List
 
 class CalibrationTarget(str, Enum):
-    COLOR_RED         = "COLOR_RED"
-    COLOR_WHITE       = "COLOR_WHITE"
-    COLOR_SILVER      = "COLOR_SILVER"
-    COLOR_BLACK       = "COLOR_BLACK"
-    WALL_LEFT         = "WALL_LEFT"
-    WALL_FRONT        = "WALL_FRONT"
-    WALL_RIGHT        = "WALL_RIGHT"
-    WALL_BACK         = "WALL_BACK"
-    WALL_2ND_FRONT_LD = "WALL_2ND_FRONT_LD"
-    NO_WALL_LEFT      = "NO_WALL_LEFT"
-    NO_WALL_FRONT     = "NO_WALL_FRONT"
-    NO_WALL_RIGHT     = "NO_WALL_RIGHT"
-    NO_WALL_BACK      = "NO_WALL_BACK"
-    NO_WALL_2ND_FRONT_LD = "NO_WALL_2ND_FRONT_LD"
-    GYRO_FLAT         = "GYRO_FLAT"
-    GYRO_INCLINE      = "GYRO_INCLINE"
+    WALL_LEFT           = "WALL_LEFT"
+    WALL_FRONT          = "WALL_FRONT"
+    WALL_RIGHT          = "WALL_RIGHT"
+    WALL_BACK           = "WALL_BACK"
+    NO_WALL_LEFT        = "NO_WALL_LEFT"
+    NO_WALL_FRONT       = "NO_WALL_FRONT"
+    NO_WALL_RIGHT       = "NO_WALL_RIGHT"
+    NO_WALL_BACK        = "NO_WALL_BACK"
+    GYRO_FLAT           = "GYRO_FLAT"
+    GYRO_INCLINE        = "GYRO_INCLINE"
+    TILE_WHITE          = "TILE_WHITE"
+    TILE_BLACK          = "TILE_BLACK"
+    HEAT_VICT_LEFT      = "HEAT_LEFT"
+    NO_HEAT_VICT_LEFT   = "HEAT_LEFT"
+    HEAT_VICT_RIGHT     = "HEAT_RIGHT"
+    NO_HEAT_VICT_RIGHT  = "HEAT_RIGHT"
+
+
+CALIBRATION_TARGET_DEPENDENCIES: Dict[CalibrationTarget, List[Sensors]] = {
+    CalibrationTarget.WALL_LEFT:    [Sensors.IR_0, Sensors.IR_1],
+    CalibrationTarget.NO_WALL_LEFT: [Sensors.IR_0, Sensors.IR_1],
+
+    CalibrationTarget.WALL_FRONT:       [Sensors.IR_2, Sensors.IR_3],
+    CalibrationTarget.NO_WALL_FRONT:    [Sensors.IR_2, Sensors.IR_3],
+
+    CalibrationTarget.WALL_RIGHT: [Sensors.IR_4, Sensors.IR_5],
+    CalibrationTarget.NO_WALL_RIGHT: [Sensors.IR_4, Sensors.IR_5],
+
+    CalibrationTarget.NO_WALL_BACK: [Sensors.IR_6, Sensors.IR_7],
+    CalibrationTarget.NO_WALL_BACK: [Sensors.IR_6, Sensors.IR_7],
+    
+    CalibrationTarget.GYRO_FLAT: [Sensors.gyro],
+    CalibrationTarget.GYRO_INCLINE: [Sensors.gyro],
+    
+    CalibrationTarget.TILE_WHITE: [Sensors.greyscale],
+    CalibrationTarget.TILE_BLACK: [Sensors.greyscale],
+
+    CalibrationTarget.HEAT_VICT_LEFT: [Sensors.temp_left],
+    CalibrationTarget.NO_HEAT_VICT_LEFT: [Sensors.temp_left],
+
+    CalibrationTarget.HEAT_VICT_RIGHT: [Sensors.temp_right],
+    CalibrationTarget.NO_HEAT_VICT_RIGHT: [Sensors.temp_right]
+}
+
+def calibration_target_to_sensors(target: CalibrationTarget) -> List[Sensors]:
+    return CALIBRATION_TARGET_DEPENDENCIES[target]
 
 
 class Calibrator(Singleton):
 
     def _init(self):
         self.path = Path(__file__).parent / 'data/data.json'
-        self.calibration_data = {}
+        self.load_calibration()
 
     def load_calibration(self):
-        with open(self.path, 'r') as f:
-            self.calibration_data = json.load(f)
+        try:
+            with open(self.path, 'r') as f:
+                self.calibration_data = json.load(f)
+            return True
+        except IOError:
+            self.calibration_data = {}
+            print("[WARNING] Calibration data file could not be opened")
+            return False
 
     def save_calibration(self):
         if not self.calibration_data:
@@ -43,71 +82,33 @@ class Calibrator(Singleton):
             json.dump(self.calibration_data, f)
         
     def calibrate(self, target: CalibrationTarget):
-        sensor_data = Receiver().get_data_s()
-        # sensor_data = ArduinoData(valid=False)
+        # sensor_data = Receiver().get_data_s()
+        sensor_data = ArduinoData(valid=False)
         
-        if target in (CalibrationTarget.COLOR_RED, CalibrationTarget.COLOR_WHITE,
-                    CalibrationTarget.COLOR_SILVER, CalibrationTarget.COLOR_BLACK):
-            self.calibration_data[target.value] = {
-                "RED": sensor_data.color_red,
-                "GRE": sensor_data.color_green,
-                "BLU": sensor_data.color_blue,
-                "ALP": sensor_data.color_alpha
-            }
-        elif target in (CalibrationTarget.WALL_LEFT, CalibrationTarget.NO_WALL_LEFT):
-            self.calibration_data[target.value] = {
-                "IR0": sensor_data.ir_0,
-                "IR1": sensor_data.ir_1,
-                "USL": sensor_data.ultrasonic_left
-            }
-        elif target in (CalibrationTarget.WALL_FRONT, CalibrationTarget.NO_WALL_FRONT):
-            self.calibration_data[target.value] = {
-                "IR2": sensor_data.ir_2,
-                "IR3": sensor_data.ir_3,
-                "LIR": sensor_data.long_distance_ir
-            }
-        elif target in (CalibrationTarget.WALL_RIGHT, CalibrationTarget.NO_WALL_RIGHT):
-            self.calibration_data[target.value] = {
-                "IR4": sensor_data.ir_4,
-                "IR5": sensor_data.ir_5,
-                "USR": sensor_data.ultrasonic_right
-            }
-        elif target in (CalibrationTarget.WALL_BACK, CalibrationTarget.NO_WALL_BACK):
-            self.calibration_data[target.value] = {
-                "IR6": sensor_data.ir_6,
-                "IR7": sensor_data.ir_7
-            }
-        elif target in (CalibrationTarget.WALL_2ND_FRONT_LD, CalibrationTarget.NO_WALL_2ND_FRONT_LD):
-            self.calibration_data[target.value] = {
-                "LIR": sensor_data.long_distance_ir
-            }
-        elif target in (CalibrationTarget.GYRO_FLAT, CalibrationTarget.GYRO_INCLINE):
-            self.calibration_data[target.value] = {
-                "GYX": sensor_data.gyro_x,
-                "GYY": sensor_data.gyro_y,
-                "GYZ": sensor_data.gyro_z
-            }
-        else:
-            print("[ERROR] calibration target is not implemented")
+        if not target in self.calibration_data:
+            self.calibration_data[target] = []
 
-    def get_calibration(self, target: CalibrationTarget) -> ArduinoData:
-        data = ArduinoData(valid=True)
-        for key in self.calibration_data[target.value]:
-            setattr(data, arduino_devstr_to_py_devstr(key), self.calibration_data[target][key])
+        calibration_sensor_values = {}
 
-        return data
+        for sensor in CALIBRATION_TARGET_DEPENDENCIES[target]:
+            calibration_sensor_values[sensor] = sensor_data[sensor]
+
+        self.calibration_data[target].append(calibration_sensor_values)
+
+    def get_calibration_data(self, target: CalibrationTarget):
+        return self.calibration_data[target]
 
 if __name__ == '__main__':
     from pprint import pprint
     clb = Calibrator()
-    clb2 = Calibrator()
-    clb.load_calibration()
 
-    pprint(clb.get_calibration(CalibrationTarget.COLOR_RED))
+    clb.calibrate(CalibrationTarget.WALL_FRONT)
+    clb.calibrate(CalibrationTarget.WALL_FRONT)
+    clb.calibrate(CalibrationTarget.WALL_RIGHT)
+    clb.calibrate(CalibrationTarget.NO_WALL_RIGHT)
 
-    # [clb.calibrate(a) for a in CalibrationTarget]
-    # # pprint(clb.calibration_data)
-    # # clb.save_calibration()
+    print(clb.get_calibration_data(CalibrationTarget.WALL_FRONT))
 
-    # clb.calibrate(CalibrationTarget.COLOR_RED)
-    # pprint(clb.calibration_data)
+    print(clb.calibration_data)
+
+    # print(json.loads(json.dumps(clb.calibration_data)) == clb.calibration_data) # -> True!!!! : )

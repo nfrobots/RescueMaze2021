@@ -1,99 +1,82 @@
 #include "Transmitter.h"
 #include "Devices.h"
+#include "ASL/types.h"
 
 #include <Arduino.h>
 #include <Wire.h>
 #include "MPU6050_6Axis_MotionApps20.h"
+#include "VL53L0X.h"
+#include "Adafruit_MLX90614.h"
 
-volatile unsigned long UsLeftValue = 0;
-volatile unsigned long UsLeftPrevTime = 0;
-volatile unsigned long UsRightValue = 0;
-volatile unsigned long UsRightPrevTime = 0;
 
-void UsLeftRising()
-{
-    UsLeftValue = micros() - UsLeftPrevTime;
-    attachInterrupt(digitalPinToInterrupt(19), UsLeftFalling, FALLING);
-}
+#define TCA_ADDRESS 0x70
+#define VLX_ADDRESS 0x29
+#define MPU_ADDRESS 0x68
+#define MLX_ADDRESS 0x5a
 
-void UsLeftFalling()
-{
-    UsLeftPrevTime = micros();
-    attachInterrupt(digitalPinToInterrupt(19), UsLeftRising, RISING);
-}
+#define MLX_LEFT_BUS 0
+#define MLX_RIGHT_BUS 1
+#define MPU_BUS 2
 
-void UsRightRising()
-{
-    UsRightValue = micros() - UsRightPrevTime;
-    attachInterrupt(digitalPinToInterrupt(18), UsRightFalling, FALLING);
-}
-
-void UsRightFalling()
-{
-    UsRightPrevTime = micros();
-    attachInterrupt(digitalPinToInterrupt(18), UsRightRising, RISING);
-}
-
-AnalogSensor irSensors[8] = {
-    AnalogSensor(A7),
-    AnalogSensor(A8),
-    AnalogSensor(A9),
-    AnalogSensor(A10),
-    AnalogSensor(A11),
-    AnalogSensor(A12),
-    AnalogSensor(A13),
-    AnalogSensor(A14)
-};
-
-AnalogSensor longDistanceIRSensor(A15);
-
-AnalogSensor greyScaleSensor(A6);
-
-ColorSensor colorSensor(49, 50, 51, 52, 53);
+VL53L0X vlx;
+asl::uint16_t vlxData[8] = {0};
 
 MPU6050 mpu;
 uint8_t fifoBuffer[42]; // FIFO storage buffer
 Quaternion q;
 
+AnalogSensor greyScaleSensor(A6);
 
-Transmitter t(
+Adafruit_MLX90614 mlx;
+double mlxLeftTemp = 0;
+double mlxRightTemp = 0;
+
+
+Transmitter t (
     JSON_TR_PARSER_REDUCED,
-    TrValue("LIR", longDistanceIRSensor.value),
-    TrValue("IR0", irSensors[0].value),
-    TrValue("IR1", irSensors[1].value),
-    TrValue("IR2", irSensors[2].value),
-    TrValue("IR3", irSensors[3].value),
-    TrValue("IR4", irSensors[4].value),
-    TrValue("IR5", irSensors[5].value),
-    TrValue("IR6", irSensors[6].value),
-    TrValue("IR7", irSensors[7].value),
+    TrValue("IR0", vlxData[0]),
+    TrValue("IR1", vlxData[1]),
+    TrValue("IR2", vlxData[2]),
+    TrValue("IR3", vlxData[3]),
+    TrValue("IR4", vlxData[4]),
+    TrValue("IR5", vlxData[5]),
+    TrValue("IR6", vlxData[6]),
+    TrValue("IR7", vlxData[7]),
     TrValue("GYX", q.x),
     TrValue("GYY", q.y),
     TrValue("GYZ", q.z),
-    TrValue("RED", colorSensor.value.red),
-    TrValue("GRE", colorSensor.value.green),
-    TrValue("BLU", colorSensor.value.blue),
-    TrValue("ALP", colorSensor.value.alpha),
     TrValue("GRS", greyScaleSensor.value),
-    TrValue("USL", UsLeftValue),
-    TrValue("USR", UsRightValue)
+    TrValue("TLA", mlxLeftTemp),
+    TrValue("TMR", mlxRightTemp)
 );
 
-void setup() {
-    pinMode(42, OUTPUT);
-    pinMode(41, OUTPUT);
-    Wire.begin();
-    Wire.setClock(400000);
+void tcaSelectBus(asl::uint8_t bus)
+{
+    if (bus > 7) return;
 
-    Serial.begin(9600);
+    Wire.beginTransmission(TCA_ADDRESS);
+    Wire.write(1 << bus);
+    Wire.endTransmission();
+}
 
-    attachInterrupt(digitalPinToInterrupt(19), UsLeftFalling, FALLING);
-    attachInterrupt(digitalPinToInterrupt(18), UsRightFalling, FALLING);
+int initializeVlxs()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        tcaSelectBus(i);
+        if(!vlx.init())
+            return -1;
+        vlx.startContinuous();
+    }
+    return 0;
+}
 
+int initializeMpu()
+{
+    tcaSelectBus(MPU_BUS);
     mpu.initialize();
     int status = mpu.dmpInitialize();
 
-    // supply your own gyro offsets here, scaled for min sensitivity
     mpu.setXGyroOffset(-9);
     mpu.setYGyroOffset(-95);
     mpu.setZGyroOffset(34);
@@ -101,35 +84,82 @@ void setup() {
     mpu.setYAccelOffset(835);
     mpu.setZAccelOffset(1005);
 
-    if (status == 0)  //init succesfull
+    if (status != 0)  // some error
     {
-        mpu.CalibrateAccel(6);
-        mpu.CalibrateGyro(6);
-        mpu.setDMPEnabled(true);
+        return -1;
     }
-    else
+
+    mpu.CalibrateAccel(6);
+    mpu.CalibrateGyro(6);
+    mpu.setDMPEnabled(true);
+    return 0;
+}
+
+int initializeMlxs()
+{
+    tcaSelectBus(MLX_LEFT_BUS);
+    if (!mlx.begin())
+        return -1;
+    
+    tcaSelectBus(MLX_RIGHT_BUS);
+    if (!mlx.begin())
+        return -1;
+
+    return 0;
+}
+
+void setup()
+{
+    Wire.begin();
+    Wire.setClock(400000);
+
+    Serial.begin(9600);
+
+    int error = initializeMpu();
+    if (error != 0)
     {
-        Serial.print(F("[Error] Initia failed\n"));
-        while (true) {};
+        Serial.print(F("[ERROR] Failed to initialize Mpu"));
+        while (true) {}
+    }
+
+    error = initializeVlxs();
+    if (error != 0)
+    {
+        Serial.print(F("[ERROR] Failed to initialize Vlxs"));
+        while (true) {}
+    }
+
+    error = initializeMlxs();
+    if (error != 0)
+    {
+        Serial.print(F("[ERROR] Failed to initialize Mlxs"));
+        while (true) {}
     }
 
     Serial.print(F("[OK] Setup succesfull\n"));
 }
 
-void loop() {
+void loop()
+{
+    tcaSelectBus(MPU_BUS);
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) // Get the Latest packet
     { 
         mpu.dmpGetQuaternion(&q, fifoBuffer); //write it to the quaternion
     }
 
-    longDistanceIRSensor.update();
-    greyScaleSensor.update();
-    colorSensor.update();
-
-    for(int i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++)
     {
-        irSensors[i].update();
+        tcaSelectBus(i);
+        vlxData[i] = vlx.readRangeContinuousMillimeters();
     }
+
+    tcaSelectBus(MLX_LEFT_BUS);
+    mlxLeftTemp = mlx.readObjectTempC();
+
+    tcaSelectBus(MLX_RIGHT_BUS);
+    mlxRightTemp = mlx.readObjectTempC();
+
+    greyScaleSensor.update();
 
     if (Serial.available())
     {

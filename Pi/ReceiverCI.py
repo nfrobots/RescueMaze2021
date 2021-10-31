@@ -1,38 +1,37 @@
 import json
 import time
-import serial
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Tuple
 
+import serial
 from util.Singleton import Singleton
+
+from Devices import Sensors
+
 
 @dataclass
 class ArduinoData:
-    valid: bool
-    long_distance_ir: int = 0
-    ir_0: int = 0
-    ir_1: int = 0
-    ir_2: int = 0
-    ir_3: int = 0
-    ir_4: int = 0
-    ir_5: int = 0
-    ir_6: int = 0
-    ir_7: int = 0
+    valid: bool = False
+    IR_0: int = 0
+    IR_1: int = 0
+    IR_2: int = 0
+    IR_3: int = 0
+    IR_4: int = 0
+    IR_5: int = 0
+    IR_6: int = 0
+    IR_7: int = 0
+    gyro: Tuple[int, int, int] = field(default_factory=lambda: list([0, 0, 0]))
     gyro_x: int = 0
     gyro_y: int = 0
     gyro_z: int = 0
-    color_red: int = 0
-    color_green: int = 0
-    color_blue: int = 0
-    color_alpha: int = 0
     greyscale: int = 0
-    ultrasonic_left: int = 0
-    ultrasonic_right: int = 0
+    temp_left: int = 0
+    temp_right: int = 0
     
-    def get_rgba(self):
-        return [self.color_red, self.color_green, self.color_blue, self.color_alpha]
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 ARDUINO_DEVSTR_TO_PI_DEVSTR = {
-    "LIR": "long_distance_ir",
     "IR0": "ir_0",
     "IR1": "ir_1",
     "IR2": "ir_2",
@@ -44,17 +43,11 @@ ARDUINO_DEVSTR_TO_PI_DEVSTR = {
     "GYX": "gyro_x",
     "GYZ": "gyro_y",
     "GYZ": "gyro_z",
-    "RED": "color_red",
-    "GRE": "color_green",
-    "BLU": "color_blue",
-    "ALP": "color_alpha",
     "GRS": "greyscale",
     "USL": "ultrasonic_left",
     "USR": "ultrasonic_right"
 }
 
-def arduino_devstr_to_py_devstr(arduino_devstr: str):
-    return ARDUINO_DEVSTR_TO_PI_DEVSTR.get(arduino_devstr, None)
 
 class Receiver(Singleton):
     def __init__(self, port=None):
@@ -87,7 +80,7 @@ class Receiver(Singleton):
         if "[ERROR]" in setup_info:
             print("[ERROR] connecting to Arduino failed")
         else:
-            print(f"[OK] serial connection established with info: {setup_info}")
+            print(f"[OK] serial connection established with info: '{setup_info}'")
             self.connected = True
 
     def request_data_as_bytes(self):
@@ -127,25 +120,21 @@ class Receiver(Singleton):
 
         return ArduinoData(
             valid               = True,
-            long_distance_ir    = data_dict["LIR"],
-            ir_0                = data_dict["IR0"],
-            ir_1                = data_dict["IR1"],
-            ir_2                = data_dict["IR2"],
-            ir_3                = data_dict["IR3"],
-            ir_4                = data_dict["IR4"],
-            ir_5                = data_dict["IR5"],
-            ir_6                = data_dict["IR6"],
-            ir_7                = data_dict["IR7"],
+            IR_0                = data_dict["IR0"],
+            IR_1                = data_dict["IR1"],
+            IR_2                = data_dict["IR2"],
+            IR_3                = data_dict["IR3"],
+            IR_4                = data_dict["IR4"],
+            IR_5                = data_dict["IR5"],
+            IR_6                = data_dict["IR6"],
+            IR_7                = data_dict["IR7"],
+            gyro_y              = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
             gyro_x              = data_dict["GYX"],
             gyro_y              = data_dict["GYY"],
             gyro_z              = data_dict["GYZ"],
-            color_red           = data_dict["RED"],
-            color_green         = data_dict["GRE"],
-            color_blue          = data_dict["BLU"],
-            color_alpha         = data_dict["ALP"],
             greyscale           = data_dict["GRS"],
-            ultrasonic_left     = data_dict["USL"],
-            ultrasonic_right    = data_dict["USR"]
+            temp_left           = data_dict["TML"],
+            temp_right          = data_dict["TMR"]
         )
 
     def get_data_s(self):
