@@ -2,9 +2,9 @@ import json
 from enum import Enum
 from pathlib import Path
 
-from Pi.ReceiverCI import Receiver, ArduinoData, arduino_devstr_to_py_devstr
+from Pi.ReceiverCI import Receiver, ArduinoData
 from util.Singleton import Singleton
-from Devices import Sensors
+from Pi.Devices import Sensors
 
 from typing import Dict, List
 
@@ -21,10 +21,10 @@ class CalibrationTarget(str, Enum):
     GYRO_INCLINE        = "GYRO_INCLINE"
     TILE_WHITE          = "TILE_WHITE"
     TILE_BLACK          = "TILE_BLACK"
-    HEAT_VICT_LEFT      = "HEAT_LEFT"
-    NO_HEAT_VICT_LEFT   = "HEAT_LEFT"
-    HEAT_VICT_RIGHT     = "HEAT_RIGHT"
-    NO_HEAT_VICT_RIGHT  = "HEAT_RIGHT"
+    HEAT_VICT_LEFT      = "HEAT_VICT_LEFT"
+    NO_HEAT_VICT_LEFT   = "NO_HEAT_VICT_LEFT"
+    HEAT_VICT_RIGHT     = "HEAT_VICT_RIGHT"
+    NO_HEAT_VICT_RIGHT  = "NO_HEAT_VICT_RIGHT"
 
 
 CALIBRATION_TARGET_DEPENDENCIES: Dict[CalibrationTarget, List[Sensors]] = {
@@ -61,9 +61,13 @@ class Calibrator(Singleton):
 
     def _init(self):
         self.path = Path(__file__).parent / 'data/data.json'
+        self.calibration_data = {}
         self.load_calibration()
 
     def load_calibration(self):
+        if self.calibration_data:
+            return
+
         try:
             with open(self.path, 'r') as f:
                 self.calibration_data = json.load(f)

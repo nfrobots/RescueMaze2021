@@ -6,7 +6,7 @@ from typing import Tuple
 import serial
 from util.Singleton import Singleton
 
-from Devices import Sensors
+from Pi.Devices import Sensors
 
 
 @dataclass
@@ -128,7 +128,7 @@ class Receiver(Singleton):
             IR_5                = data_dict["IR5"],
             IR_6                = data_dict["IR6"],
             IR_7                = data_dict["IR7"],
-            gyro_y              = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
+            gyro              = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
             gyro_x              = data_dict["GYX"],
             gyro_y              = data_dict["GYY"],
             gyro_z              = data_dict["GYZ"],

@@ -1,12 +1,12 @@
 from enum import Enum
 
-class Direction(Enum):
+class Direction(int, Enum):
     NORTH = 0
     EAST = 1
     SOUTH = 2
     WEST = 3
 
-class RelDirection(Enum):
+class RelDirection(int, Enum):
     FORWARD = 0
     RIGHT = 1
     BACKWARD = 2

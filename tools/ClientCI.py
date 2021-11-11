@@ -39,7 +39,7 @@ class Client(Singleton):
             self.socket.connect((HOST_ADDR, PORT))
             self.connected = True
             print("[INFO] connected successfully")
-        except:
+        except TimeoutError:
             print("[ERROR] could not connect to horst")
 
     @_requires_connection(default_return={"error": 1})

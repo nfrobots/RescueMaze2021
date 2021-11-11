@@ -17,7 +17,6 @@ from time import sleep
 from Pi.InterpreterCI import Interpreter
 from Pi.ReceiverCI import Receiver
 from Pi.CalibratorCI import Calibrator, CalibrationTarget
-from Pi.Devices import LEDs
 
 HOST_ADDR = '10.42.0.21'
 PORT = 1337
@@ -38,11 +37,8 @@ class Host:
             "i":            self._send_interpreted,
             "calibrate":    self._handle_calibration,
             "c":            self._handle_calibration,
-            "led":          self._set_leds,
-            "l":            self._set_leds,
             "quit":         self._handle_quit,
-            "q":            self._handle_quit,
-            "rgb":          self._led_effect
+            "q":            self._handle_quit
         }
 
     def connect(self):
@@ -67,8 +63,12 @@ class Host:
             lines = [line for line in msg.split('\n') if line]
             for line in lines:
                 command, *args = line.split(' ')
-                self.COMMANDS.get(command, lambda *args: print(f"[ERROR] command {command} not found!"))(*args)
-                print(f"[INFO] executed command: {command} with args: {args}")
+                func = self.COMMANDS.get(command, lambda *args: print(f"[ERROR] command {command} not found!"))
+                if func:
+                    func(*args)
+                    print(f"[INFO] executed command: {command} with args: {args}")
+                else:
+                    print(f"[WARNING] tryed to execute command {command}, but its unknown to host")
 
     def _send_data(self):
         data = Receiver(port="/dev/ttyACM0").get_data_s()
@@ -89,13 +89,6 @@ class Host:
     def _handle_quit(self):
         print("[INFO] the program was closed by request aka ihm wurde siuzid begangen")
         exit()
-
-    def _set_leds(self, r, g, b):
-        print(r, g, b)
-        LEDs().set_rgb(int(r), int(g), int(b))
-
-    def _led_effect(self):
-        LEDs().defqon_1()
 
 if __name__ == "__main__":
     h = Host()
