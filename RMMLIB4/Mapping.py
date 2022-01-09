@@ -153,7 +153,18 @@ def create_any_tile():
 
 class Map:
     """Map consisting of MazeTiles and a robot"""
-    def __init__(self, tile=MazeTile, sizeX=1, sizeY=1, logging=False, initialize=True, neighbours=False, path_pre_expand=False):
+    def __init__(self, Tile=MazeTile, sizeX=1, sizeY=1, logging=False, initialize=True, neighbours=False, path_pre_expand=False):
+        """Constructor
+
+        Args:
+            Tile: Class representing a tile
+            sizeX (int): initial size of the Map in x direction
+            sizeY (int): initial size of the Map in y direction
+            logging (bool): whether to log activity concerning the map
+            initialize (bool): whether to initialize the initial tiles specified by sizeX and sizeY. Be careful when setting this to False.
+            neighbours (bool): whether changes on tiles may effect neightbour tiles.
+            path_pre_expand (bool): whether to expand the map for tiles that exist, but are not yet known
+        """
         self.map = np.zeros((sizeY,sizeX), MazeTile)
         self.sizeX = sizeX
         self.sizeY = sizeY
@@ -162,7 +173,7 @@ class Map:
         if initialize:
             for x in range(sizeX):
                 for y in range(sizeY):
-                    self.map[y,x] = tile()
+                    self.map[y,x] = Tile()
 
         self.robot = _Vctr(0, 0, Constants.Direction.NORTH)
         self.logging = logging
@@ -194,7 +205,7 @@ class Map:
         return self.get(x + offset[0], y + offset[1])
 
     @Logger.iLog
-    def set(self, x: int, y: int, value: MazeTile, expand=True):
+    def set(self, x: int, y: int, value: MazeTile, expand=True, _path_pre_expand=None):
         """[[LOGGED]] Sets MazeTile at specified position, may expands until position reached. Does not set neighbours
 
         Args:
@@ -221,15 +232,10 @@ class Map:
             elif y < 0:
                 self._expand(Constants.Direction.NORTH, -y)
 
-        if self.path_pre_expand:
-            if value[Constants.Direction.NORTH] == False and y == 0:
-                self._expand(Constants.Direction.NORTH)
-            if value[Constants.Direction.SOUTH] == False and y == self.sizeY - 1:
-                self._expand(Constants.Direction.SOUTH)
-            if value[Constants.Direction.EAST] == False and x == self.sizeX - 1:
-                self._expand(Constants.Direction.EAST)
-            if value[Constants.Direction.WEST] == False and x == 0:
-                self._expand(Constants.Direction.WEST)
+        if _path_pre_expand == None and self.path_pre_expand:
+            self._perform_path_pre_expand(x, y, value)
+        elif isinstance(_path_pre_expand, Constants.Direction):
+            self._perform_path_pre_expand(x, y, value, directionConstraint=_path_pre_expand)
 
         x = x + self.offsetX - prevOffsetX
         y = y + self.offsetY - prevOffsetY
@@ -240,37 +246,56 @@ class Map:
 
         return None
 
-    def setAtRobot(self, tile: MazeTile):
-        self.set(self.robot.x, self.robot.y, tile)
+    def _perform_path_pre_expand(self, x: int, y: int, tile: MazeTile, directionConstraint=None):
+        """Pre-expands the maze, if there exists a way outside of it. Constraintable to a singel direciton."""
+        if tile[Constants.Direction.NORTH] == False and y == 0 and (directionConstraint == None or directionConstraint == Constants.Direction.NORTH):
+            self._expand(Constants.Direction.NORTH)
+        if tile[Constants.Direction.SOUTH] == False and y == self.sizeY - 1 and (directionConstraint == None or directionConstraint == Constants.Direction.SOUTH):
+            self._expand(Constants.Direction.SOUTH)
+        if tile[Constants.Direction.EAST] == False and x == self.sizeX - 1 and (directionConstraint == None or directionConstraint == Constants.Direction.EAST):
+            self._expand(Constants.Direction.EAST)
+        if tile[Constants.Direction.WEST] == False and x == 0 and (directionConstraint == None or directionConstraint == Constants.Direction.WEST):
+            self._expand(Constants.Direction.WEST)
 
-    def setAttribute(self, x, y, attribute, value, expand=True, _neighbours=None):
-        """Sets attribute of tile at specified posiotion. Sets neighbours if self.apply_to_neighbours is True
+    def setAtRobot(self, tile: MazeTile):
+        for attribute in tile._data:
+            self.setAttribute(self.robot.x, self.robot.y, attribute, tile[attribute])
+
+    def setAttribute(self, x, y, attribute, value, expand=True, _neighbours=None, _path_pre_expand=None):
+        """Sets attribute of tile at specified posiotion. Sets neighbours if specified in constructor of Map
 
         Args:
             x (int): x position
             y (int): y position
             attribute (Any): [description]
             value (Any): [description]
-            expand (bool): weather to expand
+            expand (bool): weather to expand in order to set the tile
         """
         tile = self.get(x, y)
         if tile == None:
             tile = MazeTile()
         tile[attribute] = value
-        tilePosition = self.set(x, y, tile, expand)
+
+        if _path_pre_expand == None and isinstance(attribute, Constants.Direction): # if _path_pre_expand is not specified, allow the set method to only ppe in the specified direction
+            _path_pre_expand = attribute
+        elif not isinstance(attribute, Constants.Direction): # dont allow ppe if the attribute is not a wall
+            _path_pre_expand = False
+
+        tilePosition = self.set(x, y, tile, expand, _path_pre_expand)
         if isinstance(attribute, Constants.Direction) and self.apply_to_neighbours and _neighbours == None \
             and tilePosition:
             self._setNeighbourWall(tilePosition[0], tilePosition[1], attribute, value)
 
     def _setNeighbourWall(self, x, y, direction, value):
         offset = self.directionToOffset(direction)
-        self.setAttribute(x + offset[0], y + offset[1], self.inverseDirection(direction), value, expand=False, _neighbours=False)
+        self.setAttribute(x + offset[0], y + offset[1], self.inverseDirection(direction), value, expand=False, _neighbours=False, _path_pre_expand=False)
 
     def setAttributeAtRobot(self, attribute, value):
         robotPosition = self.getRobotPosition()
         self.setAttribute(robotPosition.x, robotPosition.y, attribute, value)
         
-    def setAttributeAtRobotOffset(self, relDirection, attribute, value, expand=True):
+    def setAttributeAtRobotRelDirection(self, relDirection, attribute, value, expand=True):
+        """Sets a single tile attribute of a tile in a specified RelDirection to a specified value."""
         robotPosition = self.getRobotPosition()
         offset = self.relDirectionToOffset(relDirection)
         self.setAttribute(robotPosition.x + offset[0], robotPosition.y + offset[1], attribute, value, expand)

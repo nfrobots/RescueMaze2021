@@ -65,6 +65,9 @@ class LogReader(Frame):
         elif argument[0:13] == "<RelDirection":
             rawRelDirection = argument[1:].split(": ")
             return eval(rawRelDirection[0])
+        elif argument[0:10] == "<Direction":
+            rawDirection = argument[1:].split(": ")
+            return eval(rawDirection[0])
 
     def step(self):
         if self.instructions == None:

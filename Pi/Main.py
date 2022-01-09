@@ -13,7 +13,7 @@ Mover = tools.Simulation
 UNKNOWN_FILTER = Mapping.create_any_tile()
 UNKNOWN_FILTER[Constants.KNOWN] = False
 
-map = Mapping.Map(logging=True, path_pre_expand=True)
+map = Mapping.Map(logging=True, path_pre_expand=True, neighbours=True)
 just_started = True
 
 while True:
@@ -47,6 +47,6 @@ while True:
         if drive_succes == True:
             map.driveRobot(driveDirection)
         if drive_succes == Constants.BLACK: # no succes due to black tile
-            map.setAttributeAtRobotOffset(driveDirection, Constants.BLACK, True)
-            map.setAttributeAtRobotOffset(driveDirection, Constants.KNOWN, True)
+            map.setAttributeAtRobotRelDirection(driveDirection, Constants.BLACK, True)
+            map.setAttributeAtRobotRelDirection(driveDirection, Constants.KNOWN, True)
             break
