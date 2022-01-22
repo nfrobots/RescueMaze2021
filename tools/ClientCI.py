@@ -44,7 +44,7 @@ class Client(Singleton):
 
     @_requires_connection(default_return={"error": 1})
     def request_data(self):
-        self.socket.send("d\n".encode("utf-8"))
+        self.socket.send("data\n".encode("utf-8"))
         json_bytes = self.socket.recv(1024)
         try:
             return json.loads(json_bytes.decode("utf-8"))
@@ -101,6 +101,5 @@ class Client(Singleton):
 
 if __name__ == "__main__":
     c: Client = Client()
-    # c.connect()
-    # c.request_calibration(CalibrationTarget.COLOR_SILVER)
+    c.connect()
     print(c.request_data()) # (norddetuscher akzent) Oourranje ohne Fluchtfleisch

@@ -46,7 +46,7 @@ Transmitter t (
     TrValue("GYY", q.y),
     TrValue("GYZ", q.z),
     TrValue("GRS", greyScaleSensor.value),
-    TrValue("TLA", mlxLeftTemp),
+    TrValue("TML", mlxLeftTemp),
     TrValue("TMR", mlxRightTemp)
 );
 

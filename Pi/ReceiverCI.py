@@ -149,9 +149,11 @@ class Receiver(Singleton):
 
 
 if __name__ == "__main__":
-    rcv = Receiver(port='COM3')
+    rcv = Receiver()
     # rcv.connect()
-    print(rcv.get_data_s())
+    while(True):
+        print(rcv.get_data_s())
+        time.sleep(1)
 
-    rcv2 = Receiver('asbs')
-    print(rcv2.connected)
+
+    # there seems to be a pibcak

@@ -249,9 +249,10 @@ class SersorViewVisualMode(AbstractModule):
         data = Client().request_data()
         data_iterable = data.items()
         for counter, (key, value) in enumerate(data_iterable):
-            value = round(value, 5)
-            self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
-            self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value, counter*self.t_height + 60, fill="#000")
+            if type(value) != list:
+                value = round(value, 5)
+                self.canvas.create_text(20, counter*self.t_height + 50, text=f"{key}: {value}", anchor='w')
+                self.canvas.create_rectangle(200, counter*self.t_height + 40, 200 + value, counter*self.t_height + 60, fill="#000")
 
 SENSOR_VIEW_MODES = (SersorViewVisualMode, SersorViewNumberMode, SensorViewGraphMode)
 
