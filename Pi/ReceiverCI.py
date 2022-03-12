@@ -27,6 +27,10 @@ class ArduinoData:
     greyscale: int = 0
     temp_left: int = 0
     temp_right: int = 0
+    motor0_enc: int = 0
+    motor1_enc: int = 0
+    motor2_enc: int = 0
+    motor3_enc: int = 0
     
     def __getitem__(self, key):
         return getattr(self, key)
@@ -128,13 +132,17 @@ class Receiver(Singleton):
             IR_5                = data_dict["IR5"],
             IR_6                = data_dict["IR6"],
             IR_7                = data_dict["IR7"],
-            gyro              = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
+            gyro                = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
             gyro_x              = data_dict["GYX"],
             gyro_y              = data_dict["GYY"],
             gyro_z              = data_dict["GYZ"],
             greyscale           = data_dict["GRS"],
             temp_left           = data_dict["TML"],
-            temp_right          = data_dict["TMR"]
+            temp_right          = data_dict["TMR"],
+            motor0_enc          = data_dict["M0E"],
+            motor1_enc          = data_dict["M1E"],
+            motor2_enc          = data_dict["M2E"],
+            motor3_enc          = data_dict["M3E"]
         )
 
     def get_data_s(self):

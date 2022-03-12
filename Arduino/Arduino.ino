@@ -1,6 +1,7 @@
 #include "Transmitter.h"
 #include "Devices.h"
 #include "ASL/types.h"
+#include "MotorManager.h"
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -17,6 +18,8 @@
 #define MLX_LEFT_BUS 0
 #define MLX_RIGHT_BUS 1
 #define MPU_BUS 2
+
+MotorManager motorManager;
 
 VL53L0X vlx;
 asl::uint16_t vlxData[8] = {0};
@@ -112,7 +115,7 @@ void setup()
 {
     Wire.begin();
     Wire.setClock(400000);
-
+    motorManager.begin();
     Serial.begin(9600);
 
     int error = initializeMpu();
@@ -137,14 +140,17 @@ void setup()
     }
 
     Serial.print(F("[OK] Setup succesfull\n"));
+
+    motorManager.moveMotor(NMS_MOTOR::BACK_RIGHT, 500);
 }
 
 void loop()
 {
+    motorManager.update();
     tcaSelectBus(MPU_BUS);
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) // Get the Latest packet
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer))
     { 
-        mpu.dmpGetQuaternion(&q, fifoBuffer); //write it to the quaternion
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
     }
 
     for (int i = 0; i < 8; i++)
