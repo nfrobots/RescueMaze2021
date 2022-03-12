@@ -7,6 +7,7 @@
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "VL53L0X.h"
 #include "Adafruit_MLX90614.h"
+#include "Adafruit_SSD1306.h"
 
 
 #define TCA_ADDRESS 0x70
@@ -30,6 +31,13 @@ AnalogSensor greyScaleSensor(A6);
 Adafruit_MLX90614 mlx;
 double mlxLeftTemp = 0;
 double mlxRightTemp = 0;
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+
+#define OLED_RESET     -1
+#define SCREEN_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 Transmitter t (
@@ -57,6 +65,7 @@ void tcaSelectBus(asl::uint8_t bus)
     Wire.beginTransmission(TCA_ADDRESS);
     Wire.write(1 << bus);
     Wire.endTransmission();
+    delay(1);
 }
 
 int initializeVlxs()
@@ -65,7 +74,7 @@ int initializeVlxs()
     {
         tcaSelectBus(i);
         if(!vlx.init())
-            return -1;
+            return -1 - i;
         vlx.startContinuous();
     }
     return 0;
@@ -110,10 +119,24 @@ int initializeMlxs()
 
 void setup()
 {
+    Serial.begin(9600);
+
+    Serial.println(F("[INFO] starting init"));
+
     Wire.begin();
     Wire.setClock(400000);
 
-    Serial.begin(9600);
+    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println(F("SSD1306 allocation failed"));
+        for(;;);
+    }
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.println(F("[INFO] starting init"));
+    display.display();
+
 
     int error = initializeMpu();
     if (error != 0)
@@ -125,7 +148,8 @@ void setup()
     error = initializeVlxs();
     if (error != 0)
     {
-        Serial.print(F("[ERROR] Failed to initialize Vlxs"));
+        Serial.print(F("[ERROR] Failed to initialize Vlxs. Error Code: "));
+        Serial.println(error);
         while (true) {}
     }
 
@@ -137,6 +161,11 @@ void setup()
     }
 
     Serial.print(F("[OK] Setup succesfull\n"));
+    display.println(F("[OK] init successfull"));
+    display.display();
+    delay(500);
+    display.clearDisplay();
+    display.display();
 }
 
 void loop()
@@ -167,7 +196,14 @@ void loop()
         if (incomeing_byte == 'd')
         {
             t.transmitt();
+            display.clearDisplay();
+            display.print("-");
+
+            display.display();
+            if(display.getCursorX() > 60)
+            {
+                display.setCursor(10, 10);
+            }
         }
     }
-    delay(1);
 }
