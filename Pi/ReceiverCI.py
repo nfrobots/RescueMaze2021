@@ -27,10 +27,10 @@ class ArduinoData:
     greyscale: int = 0
     temp_left: int = 0
     temp_right: int = 0
-    motor0_enc: int = 0
     motor1_enc: int = 0
     motor2_enc: int = 0
     motor3_enc: int = 0
+    motor4_enc: int = 0
     
     def __getitem__(self, key):
         return getattr(self, key)
@@ -139,10 +139,10 @@ class Receiver(Singleton):
             greyscale           = data_dict["GRS"],
             temp_left           = data_dict["TML"],
             temp_right          = data_dict["TMR"],
-            motor0_enc          = data_dict["M0E"],
             motor1_enc          = data_dict["M1E"],
             motor2_enc          = data_dict["M2E"],
-            motor3_enc          = data_dict["M3E"]
+            motor3_enc          = data_dict["M3E"],
+            motor4_enc          = data_dict["M4E"]
         )
 
     def get_data_s(self):
