@@ -210,7 +210,6 @@ void loop()
         if (incomeing_byte == 'd')
         {
             t.transmitt();
-
             display.clearDisplay();
             display.print("-");
 
