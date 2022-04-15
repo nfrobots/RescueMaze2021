@@ -18,7 +18,7 @@ from Pi.InterpreterCI import Interpreter
 from Pi.ReceiverCI import Receiver
 from Pi.CalibratorCI import Calibrator, CalibrationTarget
 
-HOST_ADDR = '10.42.0.21'
+HOST_ADDR = '10.42.0.114'
 PORT = 1337
 
 
@@ -78,7 +78,7 @@ class Host:
     def _send_interpreted(self):
         data = Receiver().get_data_s()
         i_data = Interpreter().interprete_data(data)
-        self.connection.sendall(f"{i_data[0]} {i_data[1]}".encode("utf-8"))
+        self.connection.sendall(json.dumps(i_data._data).encode('utf-8'))
     
     def _handle_calibration(self, calibration_target):
         calibrator: Calibrator = Calibrator()
