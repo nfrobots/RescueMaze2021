@@ -146,8 +146,6 @@ class Receiver(Singleton):
             temp_left           = data_dict["TMR"],
             temp_right          = data_dict["TML"],
             time                = data_dict["time"],
-            temp_left           = data_dict["TML"],
-            temp_right          = data_dict["TMR"],
             motor1_enc          = data_dict["M1E"],
             motor2_enc          = data_dict["M2E"],
             motor3_enc          = data_dict["M3E"],
