@@ -27,6 +27,7 @@ class ArduinoData:
     greyscale: int = 0
     temp_left: int = 0
     temp_right: int = 0
+    time: int = 0
     
     def __getitem__(self, key):
         return getattr(self, key)
@@ -65,11 +66,13 @@ class Receiver(Singleton):
         self.connected = False
 
     def connect(self):
-        self.serial_connection = serial.Serial(self.port, 9600, timeout=0.2)
+        self.serial_connection = serial.Serial(self.port, 9600, timeout=2)
 
-        while self.serial_connection.in_waiting == 0:
+        time.sleep(2)
+
+        while not self.serial_connection.in_waiting > 22:
             print("[INFO] waiting for Arduino to finish initialization and establish serial connection")
-            time.sleep(0.5)
+            time.sleep(1)
         
         try:
             setup_info = self.serial_connection.read(1024).decode('utf-8')
@@ -78,7 +81,7 @@ class Receiver(Singleton):
             setup_info = "[ERROR]"
 
         if "[ERROR]" in setup_info:
-            print("[ERROR] connecting to Arduino failed")
+            print(f"[ERROR] connecting to Arduino failed: {setup_info}")
         else:
             print(f"[OK] serial connection established with info: '{setup_info}'")
             self.connected = True
@@ -87,16 +90,19 @@ class Receiver(Singleton):
         """Requests data from arduino and returns it as a bytes or None if error occured"""
         if not self.connected:
             print("[ERROR] Receiver is not connected!")
+            time.sleep(1000)
             return None
 
         self.serial_connection.write(self.REQUEST_BYTE)
         valid = True
         received_data = b''
+        time.sleep(0.1)
         incomeing_char = self.serial_connection.read()
         
         while incomeing_char != b'}':
             if incomeing_char == b'':
                 print("[WARNING] serial data request timed out")
+                print(f"just received: {received_data}")
                 valid = False
                 break
 
@@ -133,8 +139,9 @@ class Receiver(Singleton):
             gyro_y              = data_dict["GYY"],
             gyro_z              = data_dict["GYZ"],
             greyscale           = data_dict["GRS"],
-            temp_left           = data_dict["TML"],
-            temp_right          = data_dict["TMR"]
+            temp_left           = data_dict["TMR"],
+            temp_right          = data_dict["TML"],
+            time                = data_dict["time"]
         )
 
     def get_data_s(self):
@@ -144,6 +151,7 @@ class Receiver(Singleton):
 
         data = self.get_data()
         while data.valid == False:
+            print("[WARNING] invalid data. Trying again")
             data = self.get_data()
         return data
 
@@ -156,4 +164,6 @@ if __name__ == "__main__":
         time.sleep(1)
 
 
+# ArduinoData(valid=True, IR_0=8190, IR_1=8191, IR_2=522, IR_3=8191, IR_4=92, IR_5=77, IR_6=602, IR_7=8191, gyro=[-0.0, 0.0, 0.04], gyro_x=-0.0, gyro_y=0.0, gyro_z=0.04, greyscale=165, temp_left=19.67, temp_right=18.85, time=874042)
+# ArduinoData(valid=True, IR_0=8190, IR_1=8190, IR_2=521, IR_3=8190, IR_4=92, IR_5=80, IR_6=598, IR_7=8191, gyro=[0.0, 0.0, 0.0], gyro_x=0.0, gyro_y=0.0, gyro_z=0.0, greyscale=163, temp_left=20.11, temp_right=19.07, time=12608)
     # there seems to be a pibcak
