@@ -22,7 +22,7 @@
 
 MotorManager motorManager;
 
-VL53L0X vlx[8];
+VL53L0X vlx;
 asl::uint16_t vlxData[8] = {0};
 
 MPU6050 mpu;
@@ -42,6 +42,9 @@ double mlxRightTemp = 0;
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+bool mainSwitch = false;
+
+long motorEncoders[4] = {0};
 
 Transmitter t (
     JSON_TR_PARSER_REDUCED,
@@ -59,10 +62,11 @@ Transmitter t (
     TrValue("GRS", greyScaleSensor.value),
     TrValue("TML", mlxLeftTemp),
     TrValue("TMR", mlxRightTemp),
-    TrValue("M1E", _encoder_count[3]),
-    TrValue("M2E", -_encoder_count[0]),
-    TrValue("M3E", _encoder_count[1]),
-    TrValue("M4E", -_encoder_count[2])
+    TrValue("M1E", motorEncoders[0]),
+    TrValue("M2E", motorEncoders[1]),
+    TrValue("M3E", motorEncoders[2]),
+    TrValue("M4E", motorEncoders[3]),
+    TrValue("SWI", mainSwitch)
 );
 
 void tcaSelectBus(asl::uint8_t bus)
@@ -81,9 +85,9 @@ int initializeVlxs()
     {
         tcaSelectBus(i);
         delay(10);
-        if(!vlx[i].init())
+        if(!vlx.init())
             return -1 - i;
-        vlx[i].startContinuous();
+        vlx.startContinuous(100);
     }
     return 0;
 }
@@ -132,7 +136,6 @@ void setup()
     Serial.println(F("[INFO] starting init"));
 
     Wire.begin();
-    Wire.setClock(400000);
     motorManager.begin();
 
     if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -162,12 +165,15 @@ void setup()
         while (true) {}
     }
 
+
     error = initializeMlxs();
     if (error != 0)
     {
         Serial.print(F("[ERROR] Failed to initialize Mlxs"));
         while (true) {}
     }
+
+    pinMode(27, INPUT_PULLUP);
 
     Serial.print(F("[OK] Setup succesfull\n"));
 
@@ -196,7 +202,7 @@ void loop()
     for (int i = 0; i < 8; i++)
     {
         tcaSelectBus(i);
-        vlxData[i] = vlx[i].readRangeContinuousMillimeters();
+        vlxData[i] = vlx.readRangeContinuousMillimeters();
         delay(1);
     }
 
@@ -207,6 +213,13 @@ void loop()
     mlxRightTemp = mlx.readObjectTempC();
 
     greyScaleSensor.update();
+
+    mainSwitch = digitalRead(27);
+
+    motorEncoders[0] = motorManager.getEncoder(NMS_MOTOR::M1);
+    motorEncoders[1] = motorManager.getEncoder(NMS_MOTOR::M2);
+    motorEncoders[2] = motorManager.getEncoder(NMS_MOTOR::M3);
+    motorEncoders[3] = motorManager.getEncoder(NMS_MOTOR::M4);
 
     if (Serial.available())
     {
