@@ -222,12 +222,10 @@ class SensorViewGraphMode(AbstractModule):
     def __init__(self, root):
         super().__init__(root, bg="green")
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1) 
         self.canvas = Canvas(self)
         self.canvas.grid(row=0, column=0, sticky="nswe")
         self.map = Mapping.Map()
-
-
     
     def refresh(self):
         i_data: InterpretedData = Client().request_interpreted()

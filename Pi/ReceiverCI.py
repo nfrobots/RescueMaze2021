@@ -155,6 +155,12 @@ class Receiver(Singleton):
             data = self.get_data()
         return data
 
+    def send(self, bytes):
+        if not self.connected:
+            self.connect()
+
+        self.serial_connection.write(bytes)
+
 
 if __name__ == "__main__":
     rcv = Receiver()

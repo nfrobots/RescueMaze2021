@@ -54,6 +54,7 @@ CALIBRATION_TARGET_DEPENDENCIES: Dict[CalibrationTarget, List[Sensors]] = {
 }
 
 def calibration_target_to_sensors(target: CalibrationTarget) -> List[Sensors]:
+    """Returns a list of sensors that the specified calibration relies on."""
     return CALIBRATION_TARGET_DEPENDENCIES[target]
 
 
@@ -86,8 +87,8 @@ class Calibrator(Singleton):
             json.dump(self.calibration_data, f)
         
     def calibrate(self, target: CalibrationTarget):
-        # sensor_data = Receiver().get_data_s()
-        sensor_data = ArduinoData(valid=False)
+        sensor_data = Receiver().get_data_s()
+        #sensor_data = ArduinoData(valid=False)
         
         if not target in self.calibration_data:
             self.calibration_data[target] = []

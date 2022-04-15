@@ -134,7 +134,6 @@ void setup()
     Wire.begin();
     Wire.setClock(400000);
     motorManager.begin();
-    Serial.begin(9600);
 
     if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
         Serial.println(F("SSD1306 allocation failed"));
@@ -178,6 +177,11 @@ void setup()
     delay(200);
     display.clearDisplay();
     display.display();
+
+    //motorManager.moveMotor(NMS_MOTOR::BACK_RIGHT, 520);
+    //motorManager.moveMotor(NMS_MOTOR::FRONT_RIGHT, 520);
+    //motorManager.moveMotor(NMS_MOTOR::BACK_LEFT, -520);
+    //motorManager.moveMotor(NMS_MOTOR::FRONT_LEFT, -520);
 }
 
 void loop()
@@ -225,6 +229,7 @@ void loop()
             {
                 asl::int16_t value = (Serial.read() << 8) | Serial.read();
                 motorManager.moveMotor(static_cast<NMS_MOTOR>(i), value);
+            }
         }
     }
 }
