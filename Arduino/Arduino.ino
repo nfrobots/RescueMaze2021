@@ -1,12 +1,14 @@
 #include "Transmitter.h"
 #include "Devices.h"
 #include "ASL/types.h"
+#include "MotorManager.h"
 
 #include <Arduino.h>
 #include <Wire.h>
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "VL53L0X.h"
 #include "Adafruit_MLX90614.h"
+#include "Adafruit_SSD1306.h"
 
 
 #define TCA_ADDRESS 0x70
@@ -14,11 +16,13 @@
 #define MPU_ADDRESS 0x68
 #define MLX_ADDRESS 0x5a
 
-#define MLX_LEFT_BUS 0
-#define MLX_RIGHT_BUS 1
+#define MLX_RIGHT_BUS 0
+#define MLX_LEFT_BUS 1
 #define MPU_BUS 2
 
-VL53L0X vlx;
+MotorManager motorManager;
+
+VL53L0X vlx[8];
 asl::uint16_t vlxData[8] = {0};
 
 MPU6050 mpu;
@@ -30,6 +34,13 @@ AnalogSensor greyScaleSensor(A6);
 Adafruit_MLX90614 mlx;
 double mlxLeftTemp = 0;
 double mlxRightTemp = 0;
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+
+#define OLED_RESET     -1
+#define SCREEN_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 Transmitter t (
@@ -47,7 +58,11 @@ Transmitter t (
     TrValue("GYZ", q.z),
     TrValue("GRS", greyScaleSensor.value),
     TrValue("TML", mlxLeftTemp),
-    TrValue("TMR", mlxRightTemp)
+    TrValue("TMR", mlxRightTemp),
+    TrValue("M1E", _encoder_count[3]),
+    TrValue("M2E", -_encoder_count[0]),
+    TrValue("M3E", _encoder_count[1]),
+    TrValue("M4E", -_encoder_count[2])
 );
 
 void tcaSelectBus(asl::uint8_t bus)
@@ -57,6 +72,7 @@ void tcaSelectBus(asl::uint8_t bus)
     Wire.beginTransmission(TCA_ADDRESS);
     Wire.write(1 << bus);
     Wire.endTransmission();
+    delay(1);
 }
 
 int initializeVlxs()
@@ -64,9 +80,10 @@ int initializeVlxs()
     for (int i = 0; i < 8; i++)
     {
         tcaSelectBus(i);
-        if(!vlx.init())
-            return -1;
-        vlx.startContinuous();
+        delay(10);
+        if(!vlx[i].init())
+            return -1 - i;
+        vlx[i].startContinuous();
     }
     return 0;
 }
@@ -110,10 +127,26 @@ int initializeMlxs()
 
 void setup()
 {
+    Serial.begin(9600);
+
+    Serial.println(F("[INFO] starting init"));
+
     Wire.begin();
     Wire.setClock(400000);
-
+    motorManager.begin();
     Serial.begin(9600);
+
+    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println(F("SSD1306 allocation failed"));
+        for(;;);
+    }
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.println(F("[INFO] starting init"));
+    display.display();
+
 
     int error = initializeMpu();
     if (error != 0)
@@ -125,7 +158,8 @@ void setup()
     error = initializeVlxs();
     if (error != 0)
     {
-        Serial.print(F("[ERROR] Failed to initialize Vlxs"));
+        Serial.print(F("[ERROR] Failed to initialize Vlxs. Error Code: "));
+        Serial.println(error);
         while (true) {}
     }
 
@@ -137,20 +171,29 @@ void setup()
     }
 
     Serial.print(F("[OK] Setup succesfull\n"));
+
+
+    display.println(F("[OK] init successfull"));
+    display.display();
+    delay(200);
+    display.clearDisplay();
+    display.display();
 }
 
 void loop()
 {
+    motorManager.update();
     tcaSelectBus(MPU_BUS);
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) // Get the Latest packet
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer))
     { 
-        mpu.dmpGetQuaternion(&q, fifoBuffer); //write it to the quaternion
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
     }
 
     for (int i = 0; i < 8; i++)
     {
         tcaSelectBus(i);
-        vlxData[i] = vlx.readRangeContinuousMillimeters();
+        vlxData[i] = vlx[i].readRangeContinuousMillimeters();
+        delay(1);
     }
 
     tcaSelectBus(MLX_LEFT_BUS);
@@ -167,7 +210,21 @@ void loop()
         if (incomeing_byte == 'd')
         {
             t.transmitt();
+            display.clearDisplay();
+            display.print("-");
+
+            display.display();
+            if(display.getCursorX() > 60)
+            {
+                display.setCursor(10, 10);
+            }
+        }
+        else if (incomeing_byte == 'm')
+        {
+            for (int i = 1; i <= 4; i++)
+            {
+                asl::int16_t value = (Serial.read() << 8) | Serial.read();
+                motorManager.moveMotor(static_cast<NMS_MOTOR>(i), value);
         }
     }
-    delay(1);
 }
