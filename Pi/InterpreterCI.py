@@ -52,26 +52,33 @@ class Interpreter(Singleton):
         # assert self.calibrator.calibration_data != None
 
     def evaluate_distance_to_calibrated(self, data: ArduinoData, target: CalibrationTarget, use_log: bool=False):
+        """ Calculates average 'distance' to specified target using calibration data provided by 'Calibrator' Singleton. Can use logarithmic distance, if specified"""
         distance_func = multidim_distance if not use_log else logarithmic_multidim_distance
         return sum(
-            multidim_distance(
+            distance_func(
                 [data[sensor] for sensor in calibration_target_to_sensors(target)],
                 [calibration_v[sensor] for sensor in calibration_target_to_sensors(target)]
             )
             for calibration_v in self.calibrator.get_calibration_data(target)
         ) / len(self.calibrator.get_calibration_data(target))
-        
-    def interprete_data(self, data: ArduinoData):
-        print(data)
 
+    def compare_targets(self, data: ArduinoData, target1: CalibrationTarget, target2: CalibrationTarget) -> bool:
+        """Compares if ArduinoData fits target1 or target2. Returns True if ArduinoData fits target1"""
         distance_func = lambda data, target: self.evaluate_distance_to_calibrated(data, target, use_log=False)
-
-        wall_front = distance_func(data, CalibrationTarget.WALL_FRONT) < distance_func(data, CalibrationTarget.NO_WALL_FRONT)
-        print(wall_front)
-
-        return (0, 0)
-    
+        return distance_func(data, target1) < distance_func(data, target2)
         
+    def interprete_data(self, data: ArduinoData) -> InterpretedData:
+
+        interpreted_data = InterpretedData()
+        interpreted_data._data[RelDirection.FORWARD]    = self.compare_targets(data, CalibrationTarget.WALL_FRONT, CalibrationTarget.NO_WALL_FRONT)
+        interpreted_data._data[RelDirection.RIGHT]      = self.compare_targets(data, CalibrationTarget.WALL_RIGHT, CalibrationTarget.NO_WALL_RIGHT)
+        interpreted_data._data[RelDirection.LEFT]       = self.compare_targets(data, CalibrationTarget.WALL_LEFT, CalibrationTarget.NO_WALL_LEFT)
+        interpreted_data._data[RelDirection.BACKWARD]   = self.compare_targets(data, CalibrationTarget.WALL_BACK, CalibrationTarget.NO_WALL_BACK)
+
+        interpreted_data._data[Constants.VICTIM]        = self.compare_targets(data, CalibrationTarget.HEAT_VICT_LEFT, CalibrationTarget.NO_HEAT_VICT_LEFT) \
+                                                        or self.compare_targets(data, CalibrationTarget.HEAT_VICT_RIGHT, CalibrationTarget.NO_HEAT_VICT_RIGHT)
+
+        return interpreted_data
 
 if __name__ == "__main__":
     clb = Calibrator()
@@ -79,4 +86,4 @@ if __name__ == "__main__":
 
     i = Interpreter()
 
-    i.interprete_data(ArduinoData(IR_2=65, IR_3=48))
+    print(i.interprete_data(ArduinoData(IR_2=20, IR_3=20)))
