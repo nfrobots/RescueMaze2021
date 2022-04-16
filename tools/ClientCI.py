@@ -8,7 +8,7 @@ from util.Singleton import Singleton
 from RMMLIB4 import Mapping
 from RMMLIB4 import Constants
 
-HOST_ADDR = '10.42.0.21'
+HOST_ADDR = '10.42.0.114'
 PORT = 1337
 
 
@@ -60,13 +60,13 @@ class Client(Singleton):
         i_data = InterpretedData()
 
         for key in data_dict:
-            if key == "RelDirection.FORWARD":
+            if key == str(RelDirection.FORWARD.value):
                 i_data._data[RelDirection.FORWARD] = data_dict[key]
-            elif key == "RelDirection.RIGHT":
+            elif key == str(RelDirection.RIGHT.value):
                 i_data._data[RelDirection.RIGHT] = data_dict[key]
-            elif key == "RelDirection.BACKWARD":
+            elif key == str(RelDirection.BACKWARD.value):
                 i_data._data[RelDirection.BACKWARD] = data_dict[key]
-            elif key == "RelDirection.LEFT":
+            elif key == str(RelDirection.LEFT.value):
                 i_data._data[RelDirection.LEFT] = data_dict[key]
             elif key == "VICTIM":
                 i_data._data[Constants.VICTIM] = data_dict[key]
@@ -74,6 +74,8 @@ class Client(Singleton):
                 i_data._data[Constants.RAMP] = data_dict[key]
             elif key == "BLACK":
                 i_data._data[Constants.BLACK] = data_dict[key]
+                
+        print(i_data._data)
 
         return i_data
 

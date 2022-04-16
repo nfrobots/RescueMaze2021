@@ -40,7 +40,7 @@ class InterpretedData:
             tile._data[key] = self._data[key]
 
         for relDirection in RelDirection:
-            direction = Constants.Direction((robot.direction.value + relDirection.value) % 4)
+            direction = Constants.Direction((robot.direction.value - relDirection.value) % 4)
             tile._data[direction] = self._data[relDirection]
 
         return tile
@@ -87,3 +87,4 @@ if __name__ == "__main__":
     i = Interpreter()
 
     print(i.interprete_data(ArduinoData(IR_2=20, IR_3=20)))
+    print(i.interprete_data(ArduinoData(IR_2=65, IR_3=48))._data)

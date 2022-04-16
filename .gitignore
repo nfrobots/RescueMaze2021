@@ -3,3 +3,4 @@ Arduino/build
 LIDAR/build
 .vscode
 *test*
+.github_key

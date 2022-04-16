@@ -639,7 +639,7 @@ class Map:
         """Searches for MazeTile. Attribute can be set to SearchFilterAttribute.ANY, if it is not supposed to be checked
 
             Returns:
-                Tuple[MazeTile, int, int]: MazeTile, that matched, x coordinate, y coordinate repectively
+                Tuple[MazeTile, int, int]: MazeTile that matched, x coordinate, y coordinate repectively
         """
         check_attributes = [attribute for attribute in tile._data if tile._data[attribute] != SearchFilterAttribute.ANY]
         queue = Queue() # contains (Tile, x, y)

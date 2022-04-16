@@ -28,17 +28,17 @@ class CalibrationTarget(str, Enum):
 
 
 CALIBRATION_TARGET_DEPENDENCIES: Dict[CalibrationTarget, List[Sensors]] = {
-    CalibrationTarget.WALL_LEFT:    [Sensors.IR_0, Sensors.IR_1],
-    CalibrationTarget.NO_WALL_LEFT: [Sensors.IR_0, Sensors.IR_1],
+    CalibrationTarget.WALL_LEFT:    [Sensors.IR_2, Sensors.IR_6],
+    CalibrationTarget.NO_WALL_LEFT: [Sensors.IR_2, Sensors.IR_6],
 
-    CalibrationTarget.WALL_FRONT:       [Sensors.IR_2, Sensors.IR_3],
-    CalibrationTarget.NO_WALL_FRONT:    [Sensors.IR_2, Sensors.IR_3],
+    CalibrationTarget.WALL_FRONT:       [Sensors.IR_0, Sensors.IR_7],
+    CalibrationTarget.NO_WALL_FRONT:    [Sensors.IR_0, Sensors.IR_7],
 
-    CalibrationTarget.WALL_RIGHT: [Sensors.IR_4, Sensors.IR_5],
-    CalibrationTarget.NO_WALL_RIGHT: [Sensors.IR_4, Sensors.IR_5],
+    CalibrationTarget.WALL_RIGHT: [Sensors.IR_1, Sensors.IR_3],
+    CalibrationTarget.NO_WALL_RIGHT: [Sensors.IR_1, Sensors.IR_3],
 
-    CalibrationTarget.NO_WALL_BACK: [Sensors.IR_6, Sensors.IR_7],
-    CalibrationTarget.NO_WALL_BACK: [Sensors.IR_6, Sensors.IR_7],
+    CalibrationTarget.WALL_BACK: [Sensors.IR_4, Sensors.IR_5],
+    CalibrationTarget.NO_WALL_BACK: [Sensors.IR_4, Sensors.IR_5],
     
     CalibrationTarget.GYRO_FLAT: [Sensors.gyro],
     CalibrationTarget.GYRO_INCLINE: [Sensors.gyro],
@@ -54,6 +54,7 @@ CALIBRATION_TARGET_DEPENDENCIES: Dict[CalibrationTarget, List[Sensors]] = {
 }
 
 def calibration_target_to_sensors(target: CalibrationTarget) -> List[Sensors]:
+    """Returns a list of sensors that the specified calibration relies on."""
     return CALIBRATION_TARGET_DEPENDENCIES[target]
 
 
@@ -86,8 +87,8 @@ class Calibrator(Singleton):
             json.dump(self.calibration_data, f)
         
     def calibrate(self, target: CalibrationTarget):
-        # sensor_data = Receiver().get_data_s()
-        sensor_data = ArduinoData(valid=False)
+        sensor_data = Receiver().get_data_s()
+        # sensor_data = ArduinoData(valid=False)
         
         if not target in self.calibration_data:
             self.calibration_data[target] = []

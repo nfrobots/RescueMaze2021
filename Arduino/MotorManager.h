@@ -1,4 +1,4 @@
-#include "asl/types.h"
+#include "ASL/types.h"
 
 
 volatile byte oldPinInput = 0;
@@ -117,19 +117,23 @@ public:
         switch (motor)
         {
         case NMS_MOTOR::BACK_LEFT:
-            if (_speed != 0) digitalWrite(NMS_M1_DIREC, forward ? NMS_M1_FORWARD : !NMS_M1_FORWARD);
+            //Serial.print("1:"); Serial.println(_speed);
+            if (_speed != 0) analogWrite(NMS_M1_DIREC, forward ? 0 : 254);
             analogWrite(NMS_M1_SPEED, _speed);
             break;
         case NMS_MOTOR::BACK_RIGHT:
-            if (_speed != 0) digitalWrite(NMS_M2_DIREC, forward ? NMS_M2_FORWARD : !NMS_M2_FORWARD);
+            //Serial.print("2:"); Serial.println(_speed);
+            if (_speed != 0) analogWrite(NMS_M2_DIREC, forward ? 254 : 0);
             analogWrite(NMS_M2_SPEED, _speed);
             break;
         case NMS_MOTOR::FRONT_LEFT:
-            if (_speed != 0) digitalWrite(NMS_M3_DIREC, forward ? NMS_M3_FORWARD : !NMS_M3_FORWARD);
+            //Serial.print("3:"); Serial.println(_speed);
+            if (_speed != 0) analogWrite(NMS_M3_DIREC, forward ? 254 : 0);
             analogWrite(NMS_M3_SPEED, _speed);
             break;
         case NMS_MOTOR::FRONT_RIGHT:
-            if (_speed != 0) digitalWrite(NMS_M4_DIREC, forward ? NMS_M4_FORWARD : !NMS_M4_FORWARD);
+            //Serial.print("4:"); Serial.println(_speed);
+            if (_speed != 0) analogWrite(NMS_M4_DIREC, forward ? 0 : 254);
             analogWrite(NMS_M4_SPEED, _speed);
             break;
         }
@@ -174,7 +178,7 @@ public:
             {
                 setMotorSpeed(motor, 0);
             }
-            Serial.print("Motor "); Serial.print(i); Serial.print(": "); Serial.print(diff); Serial.print(" "); Serial.println(speed);
+            //Serial.print("Motor "); Serial.print(i); Serial.print(": "); Serial.print(diff); Serial.print(" "); Serial.println(speed);
         } 
     }
 
