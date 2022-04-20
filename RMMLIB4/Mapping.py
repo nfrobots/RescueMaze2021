@@ -4,6 +4,7 @@ import numpy as np
 from enum import Enum
 from queue import Queue
 import heapq
+import typing
 
 from RMMLIB4 import Constants, Logger
 from RMMLIB4.Constants import * # needed for eval() call
@@ -20,7 +21,7 @@ class Position:
         self.x = x
         self.y = y
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Compares two positions
 
         Args:
@@ -31,7 +32,7 @@ class Position:
         """
         return self.x == other.x and self.y == other.y
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Generates representation string for
 
         Returns:
@@ -47,7 +48,7 @@ class Position:
         else:
             raise KeyError(f"cannot get element {key} of Position")
 
-def distance(a, b):
+def distance(a, b) -> int:
     """Calculates manhattan distance between two positons
 
     Args:
@@ -141,14 +142,14 @@ class MazeTile:
         """
         return "<MazeTile: " + "\t".join("{}: {}".format(key, self._data[key]) for key in self._data) + ">"
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, MazeTile) and self._data == other._data
 
 
 class SearchFilterAttribute(Enum):
     ANY = "ANY"
 
-def create_any_tile():
+def create_any_tile() -> MazeTile:
     return MazeTile({key: SearchFilterAttribute.ANY for key in MAZE_TILE_TEMPLATE})
 
 class Map:
@@ -166,21 +167,21 @@ class Map:
             path_pre_expand (bool): whether to expand the map for tiles that exist, but are not yet known
         """
         self.map = np.zeros((sizeY,sizeX), MazeTile)
-        self.sizeX = sizeX
-        self.sizeY = sizeY
-        self.offsetX = 0
-        self.offsetY = 0
+        self.sizeX: int = sizeX
+        self.sizeY: int = sizeY
+        self.offsetX: int = 0
+        self.offsetY: int = 0
         if initialize:
             for x in range(sizeX):
                 for y in range(sizeY):
                     self.map[y,x] = Tile()
 
-        self.robot = _Vctr(0, 0, Constants.Direction.NORTH)
-        self.logging = logging
-        self.apply_to_neighbours = neighbours
-        self.path_pre_expand = path_pre_expand
+        self.robot: _Vctr = _Vctr(0, 0, Constants.Direction.NORTH)
+        self.logging: bool = logging
+        self.apply_to_neighbours: bool = neighbours
+        self.path_pre_expand: bool = path_pre_expand
 
-    def get(self, x, y):
+    def get(self, x, y) -> typing.Union[MazeTile, None]:
         """Gets MazeTile at specified position
 
         Args:
@@ -193,19 +194,19 @@ class Map:
         if x < self.sizeX and y < self.sizeY and x >= 0 and y >= 0:
             return self.map[y, x]
 
-    def getAtRobot(self) -> MazeTile:
+    def getAtRobot(self) -> typing.Union[MazeTile, None]:
         return self.get(self.robot.x, self.robot.y)
 
-    def getAtAbsoloute(self, x, y):
+    def getAtAbsoloute(self, x, y) -> typing.Union[MazeTile, None]:
         """gets tile at absoloute position (0,0 is the start position -> x and y can be negative)"""
         return self.get(x + self.offsetX, y + self.offsetY)
 
-    def getAtOffset(self, x, y, direction):
+    def getAtOffset(self, x, y, direction) -> typing.Union[MazeTile, None]:
         offset = self.directionToOffset(direction)
         return self.get(x + offset[0], y + offset[1])
 
     @Logger.iLog
-    def set(self, x: int, y: int, value: MazeTile, expand=True, _path_pre_expand=None):
+    def set(self, x: int, y: int, value: MazeTile, expand=True, _path_pre_expand=None) -> typing.Union[typing.Tuple[int, int], None]:
         """[[LOGGED]] Sets MazeTile at specified position, may expands until position reached. Does not set neighbours
 
         Args:
@@ -287,6 +288,7 @@ class Map:
             self._setNeighbourWall(tilePosition[0], tilePosition[1], attribute, value)
 
     def _setNeighbourWall(self, x, y, direction, value):
+        """Sets the wall of a neighbour tile. Provide the coordinates and the direction of the original wall. This function will then change the neighbour tile."""
         offset = self.directionToOffset(direction)
         self.setAttribute(x + offset[0], y + offset[1], self.inverseDirection(direction), value, expand=False, _neighbours=False, _path_pre_expand=False)
 
@@ -410,7 +412,7 @@ class Map:
     def inverseDirection(self, direction):
         return Direction((direction.value + 2) % 4)
 
-    def getRobotPosition(self):
+    def getRobotPosition(self) -> Position:
         """Gets robot position
 
         Returns:
@@ -418,10 +420,10 @@ class Map:
         """
         return Position(self.robot.x, self.robot.y)
 
-    def getRobotAbsolutePosition(self):
+    def getRobotAbsolutePosition(self) -> Position:
         return Position(self.robot.x - self.offsetX, self.robot.y - self.offsetY)
 
-    def getRobotDirection(self):
+    def getRobotDirection(self) -> Direction:
         """Gets robot direction
 
         Returns:
@@ -429,7 +431,7 @@ class Map:
         """
         return self.robot.direction
 
-    def robotIsAtStart(self):
+    def robotIsAtStart(self) -> bool:
         absoloutePosition = self.getRobotAbsolutePosition()
         return absoloutePosition.x == 0 and absoloutePosition.y == 0
 
@@ -450,7 +452,7 @@ class Map:
 
     @Logger.iLog
     def move(self):
-        """moves robot forward"""
+        """moves robot a single step forward"""
         if self.robot.direction == Constants.Direction.NORTH:
             if self.robot.y < 1:
                 self._expand(Constants.Direction.NORTH)
@@ -468,7 +470,7 @@ class Map:
                 self._expand(Constants.Direction.EAST)
             self.robot.x += 1
 
-    def driveRobot(self, relDirection):
+    def driveRobot(self, relDirection: RelDirection):
         """rotates and moves robot in specified direction
 
         Args:
@@ -478,7 +480,8 @@ class Map:
             self.rotateRobot(relDirection)
         self.move()
 
-    def canDrive(self, x, y, direction):
+    def canDrive(self, x, y, direction: Direction) -> bool:
+        """returns weather it is possible for the robot to drive in a specified direction"""
         current = self.get(x, y)
         if current == None or current[direction]:
             return False
@@ -541,7 +544,8 @@ class Map:
         return newMap
 
     @Logger.iLog
-    def findPath(self, startX, startY, endX, endY):
+    def findPath(self, startX, startY, endX, endY) -> typing.List[Position]:
+        """finds the path from (startX, startY) to (endX, endY). Returns it as a list of poistions"""
         class _ANode:
             def __init__(self, x, y, endX, endY, parent=None):
                 self.x = x
@@ -631,11 +635,12 @@ class Map:
                 if not already_set:
                     openList.add(neighbour)
 
-    def pathToDirections(self, path):
+    def pathToDirections(self, path: typing.List[Position]) -> typing.List[Direction]:
+        """converts a list of poisitions to a list of directions"""
         return [self.offsetToDirection((path[i].x - path[i - 1].x, path[i].y - path[i - 1].y)) for i in range(1, len(path))]
 
 
-    def search(self, origin: Position, tile: MazeTile):
+    def search(self, origin: Position, tile: MazeTile) -> typing.Tuple[MazeTile, int, int]:
         """Searches for MazeTile. Attribute can be set to SearchFilterAttribute.ANY, if it is not supposed to be checked
 
             Returns:
