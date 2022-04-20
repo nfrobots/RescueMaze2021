@@ -160,6 +160,8 @@ class Receiver(Singleton):
         data = self.get_data()
         while data.valid == False:
             print("[WARNING] invalid data. Trying again")
+            self.serial_connection.close()
+            self.connect()
             data = self.get_data()
         return data
 
