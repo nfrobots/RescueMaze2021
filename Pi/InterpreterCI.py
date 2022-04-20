@@ -80,6 +80,14 @@ class Interpreter(Singleton):
 
         return interpreted_data
 
+    def get_tile(self, robot: Mapping._Vctr) -> Mapping.MazeTile:
+        """Automatically fetches data from Arduino and interpretes it. Returns a Maze Tile assuming the specified robot value"""
+        arduino_data: ArduinoData = Receiver().get_data_s()
+        interpreted_data: InterpretedData = self.interpreted_data(arduino_data)
+        tile: Mapping.MazeTile = interpreted_data.to_maze_tile(robot)
+
+        return tile
+
 if __name__ == "__main__":
     clb = Calibrator()
 

@@ -8,7 +8,7 @@ INTERPREDED_DATA_TEMPLATE = Pi.Interpreter.INTERPREDED_DATA_TEMPLATE
 def interprete_data():
     return enviroment.getAtRobot()
 
-def get_data():
+def get_tile(robot: Mapping._Vctr) -> Mapping.MazeTile:
     tile = interprete_data()
     tile[Constants.KNOWN] = True
     return tile
