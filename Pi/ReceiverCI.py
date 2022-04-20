@@ -118,7 +118,7 @@ class Receiver(Singleton):
        #else:
        #    return None
 
-    def get_data(self):
+    def get_data(self) -> ArduinoData:
         """Requests data from arduino and returns it as a ArduinoData dataclass"""
         data_bytes = self.request_data_as_bytes()
         if data_bytes == None:
@@ -149,10 +149,11 @@ class Receiver(Singleton):
             motor1_enc          = data_dict["M1E"],
             motor2_enc          = data_dict["M2E"],
             motor3_enc          = data_dict["M3E"],
-            motor4_enc          = data_dict["M4E"]
+            motor4_enc          = data_dict["M4E"],
+            main_switch         = data_dict["SWI"]
         )
 
-    def get_data_s(self):
+    def get_data_s(self) -> ArduinoData:
         """like get_data, but cannot return invalid"""
         if not self.connected:
             self.connect()
@@ -165,11 +166,11 @@ class Receiver(Singleton):
             data = self.get_data()
         return data
 
-    def send(self, bytes):
+    def send(self, message: bytes):
         if not self.connected:
             self.connect()
 
-        self.serial_connection.write(bytes)
+        self.serial_connection.write(message)
 
 
 if __name__ == "__main__":

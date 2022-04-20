@@ -4,7 +4,10 @@ from RMMLIB4.Constants import Direction, RelDirection
 Logger.I_PATH = './Pi/out/log.txt'
 Logger.clear()
 
-#import Pi.Interpreter
+# from ReceiverCI import Interpreter
+# import Mover
+# Interpreter = Interpreter()
+
 import tools.Simulation
 
 Interpreter = tools.Simulation
@@ -20,7 +23,7 @@ while True:
     if just_started:
         just_started = False
 
-    current_tile = Interpreter.get_data()
+    current_tile = Interpreter.get_tile(map.robot)
     map.setAtRobot(current_tile)
     
     res = map.search(Mapping.Position(map.robot.x, map.robot.y), UNKNOWN_FILTER)
@@ -34,8 +37,8 @@ while True:
     for direction in directions:
         driveDirection = map.directionToRelDirection(direction)
 
-        if map.getAtRobot()[direction]:
-            break
+        # if map.getAtRobot()[direction]:
+        #     break
 
         destination = map.get(map.robot.x + map.directionToOffset(direction)[0],
                             map.robot.y + map.directionToOffset(direction)[1])

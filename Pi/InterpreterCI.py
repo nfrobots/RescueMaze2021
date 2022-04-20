@@ -52,6 +52,7 @@ class Interpreter(Singleton):
         # assert self.calibrator.calibration_data != None
 
     def evaluate_distance_to_calibrated(self, data: ArduinoData, target: CalibrationTarget, use_log: bool=False):
+        """ Calculates average 'distance' to specified target using calibration data provided by 'Calibrator' Singleton. Can use logarithmic distance, if specified"""
         distance_func = multidim_distance if not use_log else logarithmic_multidim_distance
         return sum(
             distance_func(
@@ -60,28 +61,32 @@ class Interpreter(Singleton):
             )
             for calibration_v in self.calibrator.get_calibration_data(target)
         ) / len(self.calibrator.get_calibration_data(target))
-        
-    def interprete_data(self, data: ArduinoData):
-        print(data)
 
+    def compare_targets(self, data: ArduinoData, target1: CalibrationTarget, target2: CalibrationTarget) -> bool:
+        """Compares if ArduinoData fits target1 or target2. Returns True if ArduinoData fits target1"""
         distance_func = lambda data, target: self.evaluate_distance_to_calibrated(data, target, use_log=False)
-
-        wall_front = distance_func(data, CalibrationTarget.WALL_FRONT) < distance_func(data, CalibrationTarget.NO_WALL_FRONT)
-        wall_left = distance_func(data, CalibrationTarget.WALL_LEFT) < distance_func(data, CalibrationTarget.NO_WALL_LEFT)
-        wall_right = distance_func(data, CalibrationTarget.WALL_RIGHT) < distance_func(data, CalibrationTarget.NO_WALL_RIGHT)
-        wall_back = distance_func(data, CalibrationTarget.WALL_BACK) < distance_func(data, CalibrationTarget.NO_WALL_BACK)
+        return distance_func(data, target1) < distance_func(data, target2)
         
-        interpreted_data = InterpretedData()
-        interpreted_data._data[RelDirection.FORWARD] = wall_front
-        interpreted_data._data[RelDirection.LEFT] = wall_left
-        interpreted_data._data[RelDirection.RIGHT] = wall_right
-        interpreted_data._data[RelDirection.BACKWARD] = wall_back
+    def interprete_data(self, data: ArduinoData) -> InterpretedData:
 
-        interpreted_data._data[Constants.VICTIM] = distance_func(data, CalibrationTarget.HEAT_VICT_LEFT) < distance_func(data, CalibrationTarget.NO_HEAT_VICT_LEFT)
+        interpreted_data = InterpretedData()
+        interpreted_data._data[RelDirection.FORWARD]    = self.compare_targets(data, CalibrationTarget.WALL_FRONT, CalibrationTarget.NO_WALL_FRONT)
+        interpreted_data._data[RelDirection.RIGHT]      = self.compare_targets(data, CalibrationTarget.WALL_RIGHT, CalibrationTarget.NO_WALL_RIGHT)
+        interpreted_data._data[RelDirection.LEFT]       = self.compare_targets(data, CalibrationTarget.WALL_LEFT, CalibrationTarget.NO_WALL_LEFT)
+        interpreted_data._data[RelDirection.BACKWARD]   = self.compare_targets(data, CalibrationTarget.WALL_BACK, CalibrationTarget.NO_WALL_BACK)
+
+        interpreted_data._data[Constants.VICTIM]        = self.compare_targets(data, CalibrationTarget.HEAT_VICT_LEFT, CalibrationTarget.NO_HEAT_VICT_LEFT) \
+                                                        or self.compare_targets(data, CalibrationTarget.HEAT_VICT_RIGHT, CalibrationTarget.NO_HEAT_VICT_RIGHT)
 
         return interpreted_data
-    
-        
+
+    def get_tile(self, robot: Mapping._Vctr) -> Mapping.MazeTile:
+        """Automatically fetches data from Arduino and interpretes it. Returns a Maze Tile assuming the specified robot value"""
+        arduino_data: ArduinoData = Receiver().get_data_s()
+        interpreted_data: InterpretedData = self.interpreted_data(arduino_data)
+        tile: Mapping.MazeTile = interpreted_data.to_maze_tile(robot)
+
+        return tile
 
 if __name__ == "__main__":
     clb = Calibrator()
@@ -89,4 +94,5 @@ if __name__ == "__main__":
 
     i = Interpreter()
 
+    print(i.interprete_data(ArduinoData(IR_2=20, IR_3=20)))
     print(i.interprete_data(ArduinoData(IR_2=65, IR_3=48))._data)
