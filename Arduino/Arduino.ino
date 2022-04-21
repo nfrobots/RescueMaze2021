@@ -244,5 +244,12 @@ void loop()
                 motorManager.moveMotor(static_cast<NMS_MOTOR>(i), value);
             }
         }
+        else if(incomeing_byte == 'k')
+        {
+            display.print("KIT");
+            display.display();
+            delay(500);
+            display.clearDisplay();
+        }
     }
 }

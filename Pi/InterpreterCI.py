@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from math import sqrt, log
-from typing import List
+from typing import List, Dict
 
 from RMMLIB4 import Constants, Mapping
 from RMMLIB4.Constants import Direction, RelDirection
@@ -22,7 +22,7 @@ def logarithmic_multidim_distance(a: List[int], b: List[int]) -> float:
 
 
 class InterpretedData:
-    _data = {
+    _data: Dict[RelDirection, bool] = {
         RelDirection.FORWARD: False,
         RelDirection.RIGHT: False,
         RelDirection.BACKWARD: False,

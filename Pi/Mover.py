@@ -1,8 +1,11 @@
+from numpy import diff
 from RMMLIB4 import Constants
 from ReceiverCI import Receiver
 from InterpreterCI import Interpreter
 
 from time import sleep
+
+from tools.Simulation import interprete_data
 
 
 def constrain(value, min_, max_):
@@ -31,7 +34,7 @@ turn_left_instruction   = generate_motor_instruction_string(-520, 520, -520, 520
 forward_instruction     = generate_motor_instruction_string(790, 790, 790, 790)
 backward_instruction    = generate_motor_instruction_string(-790, -790, -790, -790)
 
-def driveRobot(direction: Constants.relDirection):
+def driveRobot(direction: Constants.RelDirection):
     sensor_data = Receiver().get_data_s()
 
     if direction == Constants.RelDirection.RIGHT:
@@ -61,8 +64,21 @@ def driveRobot(direction: Constants.relDirection):
         
 
 def allign():
-    pass
+    sensor_data = Receiver().get_data_s()
+    interprete_data = Interpreter().interprete_data(sensor_data)
+    if interprete_data._data[Constants.RelDirection.LEFT]:
+        difference = sensor_data.motor1_enc - sensor_data.motor3_enc
+    elif interprete_data._data[Constants.RelDirection.RIGHT]:
+        difference = sensor_data.motor4_enc - sensor_data.motor2_enc
+
+    difference = 2 * difference
+
+    motor_instruction = generate_motor_instruction_string(difference, -difference, difference, -difference)
+    Receiver().send(motor_instruction)
+    sleep(1)
 
 
 def deploy_rescue_kit():
-    pass
+    Receiver().send(b'k')
+    sleep(1)
+

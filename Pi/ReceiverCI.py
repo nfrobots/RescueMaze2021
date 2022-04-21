@@ -32,6 +32,7 @@ class ArduinoData:
     motor2_enc: int = 0
     motor3_enc: int = 0
     motor4_enc: int = 0
+    main_switch: bool = False
 
     def __getitem__(self, key):
         return getattr(self, key)
