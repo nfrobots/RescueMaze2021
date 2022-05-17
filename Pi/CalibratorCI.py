@@ -2,6 +2,8 @@ import json
 from enum import Enum
 from pathlib import Path
 
+import typing
+
 from Pi.ReceiverCI import Receiver, ArduinoData
 from util.Singleton import Singleton
 from Pi.Devices import Sensors
@@ -62,7 +64,7 @@ class Calibrator(Singleton):
 
     def _init(self):
         self.path = Path(__file__).parent / 'data/data.json'
-        self.calibration_data = {}
+        self.calibration_data: typing.Dict[CalibrationTarget, typing.List[typing.Dict[Sensors, float]]]= {}
         self.load_calibration()
 
     def load_calibration(self):
@@ -107,12 +109,12 @@ if __name__ == '__main__':
     from pprint import pprint
     clb = Calibrator()
 
-    clb.calibrate(CalibrationTarget.WALL_FRONT)
-    clb.calibrate(CalibrationTarget.WALL_FRONT)
-    clb.calibrate(CalibrationTarget.WALL_RIGHT)
-    clb.calibrate(CalibrationTarget.NO_WALL_RIGHT)
+#    clb.calibrate(CalibrationTarget.WALL_FRONT)
+#    clb.calibrate(CalibrationTarget.WALL_FRONT)
+#    clb.calibrate(CalibrationTarget.WALL_RIGHT)
+#    clb.calibrate(CalibrationTarget.NO_WALL_RIGHT)
 
-    print(clb.get_calibration_data(CalibrationTarget.WALL_FRONT))
+#    print(clb.get_calibration_data(CalibrationTarget.WALL_FRONT))
 
     print(clb.calibration_data)
 

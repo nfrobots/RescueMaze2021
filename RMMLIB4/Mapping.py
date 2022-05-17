@@ -663,7 +663,7 @@ class Map:
             if matches:
                 return qelem
             checked_tiles[qelem[1:]] = True
-            next_directions = [direction for direction in Constants.Direction if not tl[direction]]
+            next_directions = [direction for direction in (Constants.Direction.NORTH, Constants.Direction.WEST, Constants.Direction.EAST, Constants.Direction.SOUTH) if not tl[direction]]
             for direction in next_directions:
                 offset = self.directionToOffset(direction)
                 destination_coords = (qelem[1] + offset[0], qelem[2] + offset[1])

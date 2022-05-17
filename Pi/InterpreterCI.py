@@ -7,8 +7,8 @@ from RMMLIB4.Constants import Direction, RelDirection
 from RMMLIB4.Mapping import MazeTile
 from util.Singleton import Singleton
 
-from Pi.CalibratorCI import CalibrationTarget, Calibrator, calibration_target_to_sensors
-from Pi.ReceiverCI import ArduinoData, Receiver
+from CalibratorCI import CalibrationTarget, Calibrator, calibration_target_to_sensors
+from ReceiverCI import ArduinoData, Receiver
 
 
 def multidim_distance(a: List[int], b: List[int]) -> float:
@@ -78,13 +78,18 @@ class Interpreter(Singleton):
         interpreted_data._data[Constants.VICTIM]        = self.compare_targets(data, CalibrationTarget.HEAT_VICT_LEFT, CalibrationTarget.NO_HEAT_VICT_LEFT) \
                                                         or self.compare_targets(data, CalibrationTarget.HEAT_VICT_RIGHT, CalibrationTarget.NO_HEAT_VICT_RIGHT)
 
+        interpreted_data._data[Constants.BLACK] = self.compare_targets(data, CalibrationTarget.TILE_BLACK, CalibrationTarget.TILE_WHITE)
+
+
         return interpreted_data
 
-    def get_tile(self, robot: Mapping._Vctr) -> Mapping.MazeTile:
+    def get_tile(self, robot: Mapping._Vctr, arduino_data=None) -> Mapping.MazeTile:
         """Automatically fetches data from Arduino and interpretes it. Returns a Maze Tile assuming the specified robot value"""
-        arduino_data: ArduinoData = Receiver().get_data_s()
-        interpreted_data: InterpretedData = self.interpreted_data(arduino_data)
+        if arduino_data == None:
+            arduino_data: ArduinoData = Receiver().get_data_s()
+        interpreted_data: InterpretedData = self.interprete_data(arduino_data)
         tile: Mapping.MazeTile = interpreted_data.to_maze_tile(robot)
+        tile[Constants.KNOWN] = True
 
         return tile
 
