@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <Servo.h>
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "VL53L0X.h"
 #include "Adafruit_MLX90614.h"
@@ -46,6 +47,8 @@ bool mainSwitch = false;
 
 long motorEncoders[4] = {0};
 
+Servo rkds;
+
 Transmitter t (
     JSON_TR_PARSER_REDUCED,
     TrValue("IR0", vlxData[0]),
@@ -83,6 +86,7 @@ int initializeVlxs()
 {
     for (int i = 0; i < 8; i++)
     {
+        if (i == 5) continue;
         tcaSelectBus(i);
         delay(10);
         if(!vlx.init())
@@ -129,11 +133,23 @@ int initializeMlxs()
     return 0;
 }
 
+void dropKit()
+{
+    rkds.attach(41, 500, 2400);
+    rkds.write(60);
+    delay(500);
+    rkds.write(0);
+    delay(200);
+    rkds.detach();
+}
+
 void setup()
 {
     Serial.begin(9600);
 
     Serial.println(F("[INFO] starting init"));
+
+    delay(50);
 
     Wire.begin();
     motorManager.begin();
@@ -150,14 +166,16 @@ void setup()
     display.display();
 
 
-    int error = initializeMpu();
-    if (error != 0)
-    {
-        Serial.print(F("[ERROR] Failed to initialize Mpu"));
-        while (true) {}
-    }
+    //int error = initializeMpu();
+    //if (error != 0)
+    //{
+    //    Serial.print(F("[ERROR] Failed to initialize Mpu"));
+    //    while (true) {}
+    //}
 
-    error = initializeVlxs();
+    delay(200);
+
+    int error = initializeVlxs();
     if (error != 0)
     {
         Serial.print(F("[ERROR] Failed to initialize Vlxs. Error Code: "));
@@ -193,14 +211,15 @@ void setup()
 void loop()
 {
     motorManager.update();
-    tcaSelectBus(MPU_BUS);
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer))
-    { 
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-    }
+//    tcaSelectBus(MPU_BUS);
+//    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer))
+//    { 
+//        mpu.dmpGetQuaternion(&q, fifoBuffer);
+//    }
 
     for (int i = 0; i < 8; i++)
     {
+        if (i == 5) continue;
         tcaSelectBus(i);
         vlxData[i] = vlx.readRangeContinuousMillimeters();
         delay(1);
@@ -248,7 +267,7 @@ void loop()
         {
             display.print("KIT");
             display.display();
-            delay(500);
+            dropKit();
             display.clearDisplay();
         }
     }
