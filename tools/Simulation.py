@@ -1,3 +1,4 @@
+from Pi.ReceiverCI import ArduinoData
 from RMMLIB4 import Mapping, Constants, Logger
 import Pi.Interpreter
 
@@ -27,4 +28,12 @@ def driveRobot(relDirection: Constants.RelDirection):
         else:
             enviroment.driveRobot(relDirection)
             return True
-        
+
+def allign():
+    pass
+
+def deploy_rescue_kit():
+    pass
+
+def get_data_s() -> ArduinoData:
+    return ArduinoData(main_switch=True)

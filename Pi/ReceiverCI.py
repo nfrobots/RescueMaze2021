@@ -32,6 +32,7 @@ class ArduinoData:
     motor2_enc: int = 0
     motor3_enc: int = 0
     motor4_enc: int = 0
+    main_switch: bool = False
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -125,42 +126,46 @@ class Receiver(Singleton):
             return ArduinoData(valid=False)
         try:
             data_dict = json.loads(data_bytes)
+            return ArduinoData(
+                valid               = True,
+                IR_0                = data_dict["IR0"],
+                IR_1                = data_dict["IR1"],
+                IR_2                = data_dict["IR2"],
+                IR_3                = data_dict["IR3"],
+                IR_4                = data_dict["IR4"],
+                IR_5                = data_dict["IR5"],
+                IR_6                = data_dict["IR6"],
+                IR_7                = data_dict["IR7"],
+                gyro                = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
+                gyro_x              = data_dict["GYX"],
+                gyro_y              = data_dict["GYY"],
+                gyro_z              = data_dict["GYZ"],
+                greyscale           = data_dict["GRS"],
+                temp_left           = data_dict["TMR"],
+                temp_right          = data_dict["TML"],
+                time                = data_dict["time"],
+                motor1_enc          = data_dict["M1E"],
+                motor2_enc          = data_dict["M2E"],
+                motor3_enc          = data_dict["M3E"],
+                motor4_enc          = data_dict["M4E"],
+                main_switch         = data_dict["SWI"]
+            )
         except json.decoder.JSONDecodeError:
             print("[ERROR] could not decode bytes to json")
+            return ArduinoData(valid=False)
 
-        return ArduinoData(
-            valid               = True,
-            IR_0                = data_dict["IR0"],
-            IR_1                = data_dict["IR1"],
-            IR_2                = data_dict["IR2"],
-            IR_3                = data_dict["IR3"],
-            IR_4                = data_dict["IR4"],
-            IR_5                = data_dict["IR5"],
-            IR_6                = data_dict["IR6"],
-            IR_7                = data_dict["IR7"],
-            gyro                = [data_dict["GYX"], data_dict["GYY"], data_dict["GYZ"]],
-            gyro_x              = data_dict["GYX"],
-            gyro_y              = data_dict["GYY"],
-            gyro_z              = data_dict["GYZ"],
-            greyscale           = data_dict["GRS"],
-            temp_left           = data_dict["TMR"],
-            temp_right          = data_dict["TML"],
-            time                = data_dict["time"],
-            motor1_enc          = data_dict["M1E"],
-            motor2_enc          = data_dict["M2E"],
-            motor3_enc          = data_dict["M3E"],
-            motor4_enc          = data_dict["M4E"],
-            main_switch         = data_dict["SWI"]
-        )
 
     def get_data_s(self) -> ArduinoData:
         """like get_data, but cannot return invalid"""
-        if not self.connected:
+        while not self.connected:
             self.connect()
+            time.sleep(1)
 
         data = self.get_data()
         while data.valid == False:
             print("[WARNING] invalid data. Trying again")
+            self.serial_connection.close()
+            self.connect()
             data = self.get_data()
         return data
 
@@ -173,6 +178,7 @@ class Receiver(Singleton):
 
 if __name__ == "__main__":
     rcv = Receiver()
+    a = Receiver()
     # rcv.connect()
     while(True):
         print(rcv.get_data_s())
