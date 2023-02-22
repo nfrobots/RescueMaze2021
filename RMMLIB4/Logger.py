@@ -4,9 +4,6 @@ from datetime import datetime
 I_PATH = None
 i_file = None
 
-R_PATH = None
-R_CONSOLE = True
-r_file = None
 
 def clear():
     if I_PATH is not None:
@@ -27,6 +24,9 @@ def iLog(func):
     return wrapper
 
 
+R_PATH = None
+R_CONSOLE = True
+r_file = None
 class LogLevel(Enum):
     DEBUG = 0
     INFO = 1
