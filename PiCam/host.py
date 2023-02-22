@@ -22,9 +22,19 @@ except socket.timeout:
 
 print(f"[DEBUG] connection established to {addr}")
 
-data = connection.recv(100000000)
+length = connection.recv(1024)
+length = int(length.decode('utf-8'))
+print(f"[INFO] receiving image size: {length}")
 
-print(len(data))
+connection.send("OK".encode('utf-8'))
+
+data = connection.recv(length)
+
+if len(data) == length:
+    print(f"[OK] received image of size {len(data)}")
+else:
+    print("[ERROR], dindn't receive all bytes")
+    exit()
 
 import cv2
 import numpy as np

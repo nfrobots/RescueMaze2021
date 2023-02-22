@@ -11,7 +11,18 @@ soc.connect((HOST_ADDRESS, PORT))
 image = cv2.imread('Download.jpg')
 _, image_enc = cv2.imencode('.jpg', image)
 image_bytes = image_enc.tobytes()
-print(len(image_bytes))
+length = len(image_bytes)
+
+print(f"Captured Image of size {length}. Transmitting size info...")
+
+soc.send(str(length).encode('utf8'))
+
+ans = soc.recv(1024)
+if ans.decode('utf8') == "OK":
+    print("Host answered OK, sending all bytes")
+else:
+    print("ERROR. Host didn't accept the data")
+    exit()
 
 soc.sendall(image_bytes)
 
